@@ -5,6 +5,7 @@ import json
 from .models import Wallet
 from django.contrib.auth.models import User
 
+@csrf_exempt
 def save_wallet(request):
     if request.method == 'POST':
         data = json.loads(request.body)
