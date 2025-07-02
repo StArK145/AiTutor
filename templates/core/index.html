@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Decentral Tutor | Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+</head>
+
+<body>
+    <h1>Connect Your MetaMask</h1>
+    <button id="connectWallet">Connect Wallet</button>
+    <p id="walletAddress"></p>
+
+    <script>
+        document.getElementById('connectWallet').addEventListener('click', async() => {
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+                    const walletAddress = accounts[0];
+                    document.getElementById('walletAddress').innerText = `Connected: ${walletAddress}`;
+
+                    // Send address to Django backend
+                    await fetch('/save_wallet/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            wallet_address: walletAddress
+                        })
+                    });
+                } catch (error) {
+                    console.error(error);
+                }
+            } else {
+                alert("MetaMask not detected!");
+            }
+        });
+    </script>
+</body>
+
+</html>
