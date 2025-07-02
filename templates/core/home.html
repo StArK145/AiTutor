@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %} {% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h2>Welcome to Decentral Tutor</h2>
+        {% if user.is_authenticated %}
+        <p>Hello, {{ user.username }}!</p>
+        <div class="mt-4">
+            <h4>Connect Wallet</h4>
+            <button id="connectWallet" class="btn btn-primary">Connect MetaMask</button>
+            <p id="walletAddress" class="mt-2"></p>
+        </div>
+        {% else %}
+        <p>Please login or sign up to continue.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+<script>
+    document.getElementById('connectWallet') ? .addEventListener('click', async() => {
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                const walletAddress = accounts[0];
+                document.getElementById('walletAddress').innerText = `Connected: ${walletAddress}`;
+
+                await fetch('/save_wallet/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        wallet_address: walletAddress
+                    })
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        } else {
+            alert("MetaMask not detected!");
+        }
+    });
+</script>
+{% endblock %}

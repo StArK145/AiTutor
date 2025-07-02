@@ -1,9 +1,15 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    is_verified = models.BooleanField(default=False)
+    
+    class Meta:
+        db_table = 'auth_user'  # Maintain compatibility with Django's auth system
 
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    address = models.CharField(max_length=42, unique=True)  # Ethereum addresses are 42 chars
+    address = models.CharField(max_length=42, unique=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
