@@ -2,8 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.models import User
-from .models import Wallet
+from .models import Wallet, User 
 import json
 
 # Home view

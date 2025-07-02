@@ -4,11 +4,12 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     
+    # Remove db_table = 'auth_user' - this was causing the issue
     class Meta:
-        db_table = 'auth_user'  # Maintain compatibility with Django's auth system
+        swappable = 'AUTH_USER_MODEL'
 
 class Wallet(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField('User', on_delete=models.CASCADE)
     address = models.CharField(max_length=42, unique=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
