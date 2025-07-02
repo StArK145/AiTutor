@@ -1,0 +1,103 @@
+<!-- templates/core/dashboard.html -->
+{% extends 'core/base.html' %} {% block content %}
+<div class="container">
+    <h2>Welcome to Your Dashboard, {{ user.username }}!</h2>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h4>Your Wallet Status</h4>
+            {% if wallet %}
+            <p>Connected Wallet: {{ wallet.address }}</p>
+            <button id="disconnectWallet" class="btn btn-danger">Disconnect Wallet</button> {% else %}
+            <p>No wallet connected yet.</p>
+            <button id="connectWallet" class="btn btn-primary">Connect MetaMask</button>
+            <div id="walletStatus" class="mt-2"></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check if MetaMask is installed
+    function checkMetaMask() {
+        if (typeof window.ethereum === 'undefined') {
+            document.getElementById('walletStatus').innerHTML =
+                '<div class="alert alert-warning">' +
+                'MetaMask not detected! Please install the <a href="https://metamask.io/" target="_blank">MetaMask extension</a>.' +
+                '</div>';
+            return false;
+        }
+        return true;
+    }
+
+    // Connect Wallet (old browser compatible version)
+    var connectBtn = document.getElementById('connectWallet');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', function() {
+            if (!checkMetaMask()) return;
+
+            var statusEl = document.getElementById('walletStatus');
+            statusEl.innerHTML = '<div class="spinner-border text-primary" role="status"></div> Connecting...';
+
+            window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                })
+                .then(function(accounts) {
+                    var walletAddress = accounts[0];
+
+                    return fetch('/save_wallet/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            wallet_address: walletAddress
+                        })
+                    });
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        document.getElementById('walletStatus').innerHTML =
+                            '<div class="alert alert-danger">Connection failed</div>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error(error);
+                    document.getElementById('walletStatus').innerHTML =
+                        '<div class="alert alert-danger">Error: ' + error.message + '</div>';
+                });
+        });
+    }
+
+    // Disconnect Wallet (old browser compatible version)
+    var disconnectBtn = document.getElementById('disconnectWallet');
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', function() {
+            fetch('/save_wallet/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        wallet_address: null
+                    })
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                })
+                .catch(function(error) {
+                    console.error(error);
+                });
+        });
+    }
+
+    // Initialize MetaMask check when page loads
+    window.addEventListener('load', checkMetaMask);
+</script>
+{% endblock %}

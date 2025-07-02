@@ -130,6 +130,6 @@ STATICFILES_DIRS = [
 ]
 
 
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'dashboard'  # Change from 'home' to 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 
