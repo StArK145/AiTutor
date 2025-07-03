@@ -1,15 +1,19 @@
-# decentral_tutor/urls.py
 from django.contrib import admin
-from django.urls import path
-from django.contrib.auth import views as auth_views
-from core import views
+from django.urls import path, include
+from core.api import SignUpAPI, LoginAPI, DashboardAPI, WalletAPI
+from django.views.generic import TemplateView  # For serving React
 
 urlpatterns = [
+    # Admin site
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),
-    path('dashboard/', views.dashboard, name='dashboard'),  # Add this
-    path('signup/', views.signup, name='signup'),
-    path('login/', views.user_login, name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('save_wallet/', views.save_wallet, name='save_wallet'),
+    
+    # API Endpoints
+    path('api/signup/', SignUpAPI.as_view(), name='api_signup'),
+    path('api/login/', LoginAPI.as_view(), name='api_login'),
+    path('api/dashboard/', DashboardAPI.as_view(), name='api_dashboard'),
+    path('api/wallet/', WalletAPI.as_view(), name='api_wallet'),
+    
+    # Catch-all route for React (must be last)
+    path('', TemplateView.as_view(template_name='index.html')),
+    path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]
