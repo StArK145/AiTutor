@@ -6,8 +6,10 @@ from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
 from .models import Wallet, User
 from .serializers import UserSerializer, WalletSerializer
+from rest_framework.permissions import AllowAny
 
 class SignUpAPI(generics.CreateAPIView):
+    permission_classes = [AllowAny]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -25,6 +27,7 @@ class SignUpAPI(generics.CreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginAPI(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
