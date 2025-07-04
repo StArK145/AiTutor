@@ -63,7 +63,7 @@ const AuthForm = () => {
         },
         {
           headers: {
-            'X-Firebase-Uid': user.uid,
+            'X-Firebase-UID': user.uid,
           },
         },
       );
@@ -91,12 +91,12 @@ const AuthForm = () => {
         await axios.post(
           `${API_BASE}/login/`,
           {
-            username: user.email,
+            display_name: user.displayName || formData.username || user.email.split('@')[0],
             email: user.email,
           },
           {
             headers: {
-              'X-Firebase-Uid': user.uid,
+              'X-Firebase-UID': user.uid,
             },
           },
         );
