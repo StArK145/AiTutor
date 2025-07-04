@@ -84,7 +84,7 @@ const AuthForm = () => {
       const token = await user.getIdToken();
       localStorage.setItem('token', token);
       console.log('Google User:', user.email, user.uid);
-      
+      console.log("Attempting to register user in backend...");
 
       const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
       if (signInMethods.length === 1 && signInMethods[0] === 'google.com') {
@@ -97,11 +97,12 @@ const AuthForm = () => {
           {
             headers: {
               'X-Firebase-UID': user.uid,
+              'Authorization': `Bearer ${token}`
             },
           },
         );
       }
-
+      console.log("Backend response:", result.data);
       alert('Login successful via Google!');
       navigate('/dashboard');
     } catch (error) {

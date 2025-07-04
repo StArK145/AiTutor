@@ -13,6 +13,18 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables
+
+# Firebase config
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
+FIREBASE_PRIVATE_KEY_ID = os.getenv("FIREBASE_PRIVATE_KEY_ID")
+FIREBASE_PRIVATE_KEY = os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n')
+FIREBASE_CLIENT_EMAIL = os.getenv("FIREBASE_CLIENT_EMAIL")
+FIREBASE_CLIENT_ID = os.getenv("FIREBASE_CLIENT_ID")
+FIREBASE_CLIENT_CERT_URL = os.getenv("FIREBASE_CLIENT_CERT_URL")
+
 AUTH_USER_MODEL = 'core.User'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -160,4 +172,8 @@ CORS_ALLOW_HEADERS = [
     'x-firebase-uid',  # Add this
     'x-user-email',    # Add this
     'x-user-name',     # Add this
+    'x-requested-with', 
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
