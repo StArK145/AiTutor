@@ -91,7 +91,7 @@ const AuthForm = () => {
         await axios.post(
           `${API_BASE}/login/`,
           {
-            display_name: user.displayName || formData.username || user.email.split('@')[0],
+            username: user.email,
             email: user.email,
           },
           {
