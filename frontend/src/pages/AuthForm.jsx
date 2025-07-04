@@ -54,12 +54,19 @@ const AuthForm = () => {
       const token = await user.getIdToken();
       localStorage.setItem('token', token);
 
-      // Register user in Django backend only
-      await axios.post(`${API_BASE}/login/`, {
-        username: formData.username,
-        email: user.email,
-        firebase_uid: user.uid,
-      });
+      // Register user in Django backend with UID in headers
+      await axios.post(
+        `${API_BASE}/login/`,
+        {
+          username: formData.username,
+          email: user.email,
+        },
+        {
+          headers: {
+            'X-Firebase-Uid': user.uid,
+          },
+        },
+      );
 
       alert('Signup successful! Please log in.');
       setIsLogin(true);
@@ -76,14 +83,23 @@ const AuthForm = () => {
       const { user } = result;
       const token = await user.getIdToken();
       localStorage.setItem('token', token);
+      console.log('Google User:', user.email, user.uid);
+      
 
       const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
       if (signInMethods.length === 1 && signInMethods[0] === 'google.com') {
-        await axios.post(`${API_BASE}/login/`, {
-          username: user.email,
-          email: user.email,
-          firebase_uid: user.uid,
-        });
+        await axios.post(
+          `${API_BASE}/login/`,
+          {
+            username: user.email,
+            email: user.email,
+          },
+          {
+            headers: {
+              'X-Firebase-Uid': user.uid,
+            },
+          },
+        );
       }
 
       alert('Login successful via Google!');
