@@ -86,19 +86,10 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+AUTH_PASSWORD_VALIDATORS = []
+AUTHENTICATION_BACKENDS = [
+    'core.firebase_auth.FirebaseAuthentication',
+    'django.contrib.auth.backends.ModelBackend',  # Keep for admin
 ]
 
 # Internationalization
@@ -128,7 +119,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     )
 }
-
 # Simple JWT Configuration
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -147,3 +137,13 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Email configuration (example - update for production)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Update STATICFILES_DIRS to check if directory exists
+
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'frontend/build/static'),
+] if os.path.exists(os.path.join(BASE_DIR, 'frontend/build/static')) else []
+
+
+
