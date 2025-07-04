@@ -1,52 +1,63 @@
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from .models import Wallet
-from .serializers import UserSerializer, WalletSerializer
-from .firebase_auth import FirebaseAuthentication
-from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
+User = get_user_model()
 
 class FirebaseLoginAPI(APIView):
-    authentication_classes = [FirebaseAuthentication]
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
-        user = request.user
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': UserSerializer(user).data
-        })
-
-class DashboardAPI(generics.RetrieveAPIView):
-    authentication_classes = [FirebaseAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = WalletSerializer
-
-    def get_object(self):
-        user = self.request.user
-        wallet, created = Wallet.objects.get_or_create(user=user)
-        return wallet
-
-class WalletAPI(generics.UpdateAPIView):
-    authentication_classes = [FirebaseAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = WalletSerializer
-
-    def get_object(self):
-        return Wallet.objects.get(user=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        wallet = self.get_object()
-        address = request.data.get('address')
+        print("\n=== Received Request ===")
+        print("Headers:", request.headers)
+        print("Data:", request.data)
+        print("Method:", request.method)
         
-        if address:
-            wallet.address = address
-            wallet.save()
-            return Response({'status': 'success'})
-        else:
-            wallet.delete()
-            return Response({'status': 'wallet disconnected'}, status=status.HTTP_204_NO_CONTENT)
+        firebase_uid = request.headers.get('X-Firebase-UID')
+        if not firebase_uid:
+            print("!! Missing Firebase UID header")
+            return Response(
+                {'error': 'Missing Firebase UID in headers'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        email = request.data.get('email')
+        if not email:
+            print("!! Missing email in request data")
+            return Response(
+                {'error': 'Email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # ... rest of your existing code ...
+        username = request.data.get('username') or email.split('@')[0]
+        
+
+        user, created = User.objects.get_or_create(
+            firebase_uid=firebase_uid,
+            defaults={'email': email, 'username': username}
+        )
+
+        if created:
+            return Response({
+                'uid': user.firebase_uid,
+                'email': user.email,
+                'username': user.username,
+                'message': 'User created successfully'
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'uid': user.firebase_uid,
+            'email': user.email,
+            'username': user.username,
+            'message': 'User already exists'
+        }, status=status.HTTP_200_OK)
+    
+
+
+class DashboardAPI(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        return Response({"message": "Dashboard API"}, status=status.HTTP_200_OK)

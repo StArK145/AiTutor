@@ -51,8 +51,6 @@ const AuthForm = () => {
         formData.password,
       );
 
-      const token = await user.getIdToken();
-      localStorage.setItem('token', token);
 
       // Register user in Django backend with UID in headers
       await axios.post(
@@ -81,11 +79,11 @@ const AuthForm = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const { user } = result;
-      const token = await user.getIdToken();
-      localStorage.setItem('token', token);
+  
 
       const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
-      if (signInMethods.length === 1 && signInMethods[0] === 'google.com') {
+      if (signInMethods.length != 1 && signInMethods[0] != 'google.com') {
+        
         await axios.post(
           `${API_BASE}/login/`,
           {
@@ -94,12 +92,11 @@ const AuthForm = () => {
           },
           {
             headers: {
-              'X-Firebase-Uid': user.uid,
+              'X-Firebase-UID': user.uid,
             },
           },
         );
       }
-
       alert('Login successful via Google!');
       navigate('/dashboard');
     } catch (error) {
