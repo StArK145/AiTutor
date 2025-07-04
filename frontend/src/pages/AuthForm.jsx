@@ -55,7 +55,7 @@ const AuthForm = () => {
       localStorage.setItem('token', token);
 
       // Register user in Django backend only
-      await axios.post(`${API_BASE}/register-user/`, {
+      await axios.post(`${API_BASE}/login/`, {
         username: formData.username,
         email: user.email,
         firebase_uid: user.uid,
@@ -79,7 +79,7 @@ const AuthForm = () => {
 
       const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
       if (signInMethods.length === 1 && signInMethods[0] === 'google.com') {
-        await axios.post(`${API_BASE}/register-user/`, {
+        await axios.post(`${API_BASE}/login/`, {
           username: user.email,
           email: user.email,
           firebase_uid: user.uid,
