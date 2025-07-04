@@ -63,7 +63,7 @@ const AuthForm = () => {
         },
         {
           headers: {
-            'X-Firebase-UID': user.uid,
+            'X-Firebase-Uid': user.uid,
           },
         },
       );
@@ -83,20 +83,18 @@ const AuthForm = () => {
       const { user } = result;
       const token = await user.getIdToken();
       localStorage.setItem('token', token);
-      console.log('Google User:', user.email, user.uid);
-      
 
       const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
       if (signInMethods.length === 1 && signInMethods[0] === 'google.com') {
         await axios.post(
           `${API_BASE}/login/`,
           {
-            display_name: user.displayName || formData.username || user.email.split('@')[0],
+            username: user.email,
             email: user.email,
           },
           {
             headers: {
-              'X-Firebase-UID': user.uid,
+              'X-Firebase-Uid': user.uid,
             },
           },
         );
