@@ -17,10 +17,10 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             # Create new user if doesn't exist
             return self.create_user(firebase_uid, request), None
 
+# In firebase_auth.py
     def create_user(self, firebase_uid, request):
-        # Get user data from request
         email = request.data.get('email', '')
-        display_name = request.data.get('display_name', '')
+        display_name = request.data.get('display_name', email.split('@')[0])
         
         return User.objects.create_user(
             firebase_uid=firebase_uid,
