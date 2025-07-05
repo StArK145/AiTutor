@@ -12,6 +12,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(false); // ⬅️ new
   const [csrfToken, setCsrfToken] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [websites, setWebsites] = useState([]);
   const gradeOptions = [
     { value: "school", label: "Elementary School", icon: "🎒" },
     { value: "high school", label: "High School", icon: "📚" },
@@ -62,8 +63,7 @@ function Dashboard() {
     }
   };
 
-  const fetchVideoResources = async (e) => {
-    const chapter = e.target.innerHTML.trim();
+  const fetchVideoResources = async (chapter) => {
 
     if (!topic?.trim()) return setError("Topic cannot be blank");
     if (!grade?.trim()) return setError("Grade cannot be blank");
@@ -92,6 +92,53 @@ function Dashboard() {
       setVideos([]);
     }
   };
+
+  // keep in the same component file or pull out to utils if you prefer
+  const fetchWebResources = async ({ topic, grade, chapter }) => {
+    const csrfToken = await getCsrfToken();
+
+    const res = await axios.post(
+      `${API_BASE}/websites/`, // adjust if your route is different
+      { topic, grade, chapter },
+      {
+        withCredentials: true,
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return res.data?.data?.websites || [];
+  };
+
+  const handleChapterClick = async (e) => {
+  const chapter = e.target.innerHTML;
+
+  if (!topic?.trim()) return setError("Topic cannot be blank");
+  if (!grade?.trim()) return setError("Grade cannot be blank");
+  if (!chapter) return setError("Chapter cannot be blank");
+
+  try {
+    setError("");
+    setLoading(true);
+
+    // Call video fetch (updates state inside)
+    await fetchVideoResources(chapter);
+
+    // Call website fetch and set state
+    const websitesArr = await fetchWebResources({ topic, grade, chapter });
+    setWebsites(websitesArr);
+  } catch (err) {
+    const backendMsg = err?.response?.data?.error;
+    setError(backendMsg || err.message || "Failed to fetch resources");
+    setVideos([]);
+    setWebsites([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
     <div className="max-w-2xl mx-auto mt-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-2xl rounded-3xl border border-blue-100">
       {/* Header */}
@@ -240,13 +287,7 @@ function Dashboard() {
                     {i + 1}
                   </div>
                   <div className="flex-1">
-                    <h4
-                      key={i}
-                      onClick={fetchVideoResources}
-                      className="font-medium text-gray-800 group-hover:text-indigo-700 transition-colors cursor-pointer"
-                    >
-                      {chapter}
-                    </h4>
+                    <h4 onClick={(e) => handleChapterClick(e)}>{chapter}</h4>
                   </div>
                 </div>
               </div>
@@ -254,17 +295,52 @@ function Dashboard() {
           </div>
         </div>
       )}
-       {/* Display fetched videos */}
+      {/* loading spinner */}
+      {loading && <p>Loading…</p>}
+
+      {/* error */}
+      {error && <p className="text-red-500">{error}</p>}
+
+      {/* videos */}
       {videos.length > 0 && (
-        <ul className="mt-4 space-y-2">
-          {videos.map((v, i) => (
-            <li key={i}>
-              <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                {v.title}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <>
+          <h3 className="font-semibold mt-4">Videos</h3>
+          <ul className="space-y-1">
+            {videos.map((v, i) => (
+              <li key={i}>
+                <a
+                  href={v.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  {v.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {/* websites */}
+      {websites.length > 0 && (
+        <>
+          <h3 className="font-semibold mt-4">Websites</h3>
+          <ul className="space-y-1">
+            {websites.map((w, i) => (
+              <li key={i}>
+                <a
+                  href={w.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  {w.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
