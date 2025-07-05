@@ -1,50 +1,53 @@
 import requests
 import json
 from pprint import pprint
-from utils import generate_chapter_names
+from core.utils import get_video_resources  # Import the utility function directly
 
 # Configuration
 BASE_URL = "http://localhost:8000"
-CHAPTER_API_URL = f"{BASE_URL}/api/chapters/"
+VIDEO_API_URL = f"{BASE_URL}/api/videos/"
 
-def test_generate_chapter_names_directly():
-    """Test the generate_chapter_names function directly"""
-    print("\n=== Testing generate_chapter_names function directly ===")
+def test_get_video_resources_directly():
+    """Test the get_video_resources function directly"""
+    print("\n=== Testing get_video_resources function directly ===")
     
     test_cases = [
-        ("Python Programming", "high school"),
-        ("Quantum Physics", "college"),
-        ("World History", "middle school"),
+        ("Python Programming", "high school", "Functions and Modules"),
+        ("Quantum Physics", "college", "Wave-Particle Duality"),
+        ("World History", "middle school", "Ancient Civilizations"),
     ]
     
-    for topic, grade in test_cases:
-        print(f"\nTesting with topic='{topic}' and grade='{grade}'")
+    for topic, grade, chapter in test_cases:
+        print(f"\nTesting with topic='{topic}', grade='{grade}', chapter='{chapter}'")
         try:
-            chapters = generate_chapter_names(topic, grade)
-            print(f"Generated {len(chapters)} chapters:")
-            for i, chapter in enumerate(chapters, 1):
-                print(f"{i}. {chapter}")
+            videos = get_video_resources(topic, grade, chapter)
+            print(f"Found {len(videos)} videos:")
+            for i, video in enumerate(videos, 1):
+                print(f"{i}. {video['title']} ({video['duration']})")
+                print(f"   Channel: {video['channel']}")
+                print(f"   URL: {video['url']}")
         except Exception as e:
             print(f"Error: {str(e)}")
 
-def test_chapter_api():
-    """Test the ChapterAPI endpoint"""
-    print("\n=== Testing ChapterAPI endpoint ===")
+def test_video_api():
+    """Test the VideoResourcesAPI endpoint"""
+    print("\n=== Testing VideoResourcesAPI endpoint ===")
     
     test_cases = [
-        {"topic": "Machine Learning", "grade": "undergraduate"},
-        {"topic": "Biology", "grade": "high school"},
-        {"topic": "Art History", "grade": "college"},
-        # Add edge cases
-        {"topic": "", "grade": "high school"},  # Missing topic
-        {"topic": "Chemistry", "grade": ""},    # Missing grade
+        {"topic": "Machine Learning", "grade": "undergraduate", "chapter": "Neural Networks"},
+        {"topic": "Biology", "grade": "high school", "chapter": "Cell Structure"},
+        {"topic": "Art History", "grade": "college", "chapter": "Renaissance Art"},
+        # Edge cases
+        {"topic": "", "grade": "high school", "chapter": "Algebra"},  # Missing topic
+        {"topic": "Chemistry", "grade": "", "chapter": "Atomic Structure"},  # Missing grade
+        {"topic": "Physics", "grade": "college", "chapter": ""},  # Missing chapter
     ]
     
     for data in test_cases:
         print(f"\nTesting with data: {json.dumps(data)}")
         try:
             response = requests.post(
-                CHAPTER_API_URL,
+                VIDEO_API_URL,
                 json=data,
                 headers={"Content-Type": "application/json"}
             )
@@ -58,9 +61,9 @@ def test_chapter_api():
 
 if __name__ == "__main__":
     # Test the utility function directly
-    test_generate_chapter_names_directly()
+    test_get_video_resources_directly()
     
     # Test the API endpoint
-    test_chapter_api()
+    test_video_api()
     
     print("\nAll tests completed!")

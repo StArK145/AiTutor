@@ -83,16 +83,46 @@ def generate_chapter_names(topic: str, grade: str) -> List[str]:
 
 def get_video_resources(topic: str, grade: str, chapter_name: str) -> List[VideoResource]:
     query = f"{topic} {chapter_name} tutorial for {grade} grade"
-    results = YoutubeSearch(query, max_results=5).to_dict()
+    results = YoutubeSearch(query, max_results=20).to_dict()  # Get more results to filter from
     
     videos = []
-    for result in results[:4]:
-        videos.append({
-            "title": result["title"],
-            "url": f"https://youtube.com{result['url_suffix']}",
-            "channel": result["channel"],
-            "duration": result["duration"]
-        })
+    for result in results:
+        # Parse duration (format is either MM:SS or HH:MM:SS)
+        duration_str = result["duration"]
+        duration_parts = duration_str.split(':')
+        
+        try:
+            if len(duration_parts) == 2:  # MM:SS format
+                minutes = int(duration_parts[0])
+                seconds = int(duration_parts[1])
+                total_seconds = minutes * 60 + seconds
+            elif len(duration_parts) == 3:  # HH:MM:SS format
+                hours = int(duration_parts[0])
+                minutes = int(duration_parts[1])
+                seconds = int(duration_parts[2])
+                total_seconds = hours * 3600 + minutes * 60 + seconds
+            else:
+                continue  # Skip if duration format is unexpected
+            
+            # Convert to minutes for comparison
+            duration_minutes = total_seconds / 60
+            
+            # Check if duration is between 3 and 90 minutes
+            if 3 <= duration_minutes <= 90:
+                videos.append({
+                    "title": result["title"],
+                    "url": f"https://youtube.com{result['url_suffix']}",
+                    "channel": result["channel"],
+                    "duration": duration_str,
+                    "duration_minutes": round(duration_minutes, 1)  # Added for convenience
+                })
+                
+                # Stop when we have 4 qualifying videos
+                if len(videos) >= 4:
+                    break
+                    
+        except (ValueError, IndexError):
+            continue  # Skip if duration parsing fails
     
     return videos
 

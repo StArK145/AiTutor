@@ -121,3 +121,58 @@ class ChapterAPI(APIView):
 @api_view(['GET'])
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
+
+
+
+
+from .utils import get_video_resources
+
+class VideoResourcesAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            # Get topic, grade and chapter from request data
+            topic = request.data.get('topic')
+            grade = request.data.get('grade')
+            chapter = request.data.get('chapter')
+            
+            # Validate required fields
+            if not topic:
+                return Response(
+                    {'error': 'Topic is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not grade:
+                return Response(
+                    {'error': 'Grade/level is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not chapter:
+                return Response(
+                    {'error': 'Chapter name is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get video resources (limited to 4 by the utility function)
+            videos = get_video_resources(topic, grade, chapter)
+            
+            # Return success response with videos
+            return Response({
+                'status': True,
+                'message': 'Video resources fetched successfully',
+                'data': {
+                    'topic': topic,
+                    'grade': grade,
+                    'chapter': chapter,
+                    'videos': videos
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Return error response
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to fetch video resources'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
