@@ -1,1 +1,11 @@
 firebase-admin==6.9.0
+youtube_search==2.1.2
+tavily-python==0.7.0
+python-dotenv==1.0.1
+Django==5.2.4
+youtube_transcript_api==1.1.0
+google-generativeai==0.8.4
+django-cors-headers==4.7.0
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+groq==0.29.0
