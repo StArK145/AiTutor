@@ -329,6 +329,60 @@ def get_csrf_token(request):
 
 
 
+
+from .utils import get_video_resources
+
+class VideoResourcesAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            # Get topic, grade and chapter from request data
+            topic = request.data.get('topic')
+            grade = request.data.get('grade')
+            chapter = request.data.get('chapter')
+            
+            # Validate required fields
+            if not topic:
+                return Response(
+                    {'error': 'Topic is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not grade:
+                return Response(
+                    {'error': 'Grade/level is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not chapter:
+                return Response(
+                    {'error': 'Chapter name is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get video resources (limited to 4 by the utility function)
+            videos = get_video_resources(topic, grade, chapter)
+            
+            # Return success response with videos
+            return JsonResponse({
+                'status': True,
+                'message': 'Video resources fetched successfully',
+                'data': {
+                    'topic': topic,
+                    'grade': grade,
+                    'chapter': chapter,
+                    'videos': videos
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Return error response
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to fetch video resources'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 ================================================
 FILE: core/apps.py
 ================================================
@@ -481,50 +535,53 @@ FILE: core/tesr.py
 import requests
 import json
 from pprint import pprint
-from utils import generate_chapter_names
+from core.utils import get_video_resources  # Import the utility function directly
 
 # Configuration
 BASE_URL = "http://localhost:8000"
-CHAPTER_API_URL = f"{BASE_URL}/api/chapters/"
+VIDEO_API_URL = f"{BASE_URL}/api/videos/"
 
-def test_generate_chapter_names_directly():
-    """Test the generate_chapter_names function directly"""
-    print("\n=== Testing generate_chapter_names function directly ===")
+def test_get_video_resources_directly():
+    """Test the get_video_resources function directly"""
+    print("\n=== Testing get_video_resources function directly ===")
     
     test_cases = [
-        ("Python Programming", "high school"),
-        ("Quantum Physics", "college"),
-        ("World History", "middle school"),
+        ("Python Programming", "high school", "Functions and Modules"),
+        ("Quantum Physics", "college", "Wave-Particle Duality"),
+        ("World History", "middle school", "Ancient Civilizations"),
     ]
     
-    for topic, grade in test_cases:
-        print(f"\nTesting with topic='{topic}' and grade='{grade}'")
+    for topic, grade, chapter in test_cases:
+        print(f"\nTesting with topic='{topic}', grade='{grade}', chapter='{chapter}'")
         try:
-            chapters = generate_chapter_names(topic, grade)
-            print(f"Generated {len(chapters)} chapters:")
-            for i, chapter in enumerate(chapters, 1):
-                print(f"{i}. {chapter}")
+            videos = get_video_resources(topic, grade, chapter)
+            print(f"Found {len(videos)} videos:")
+            for i, video in enumerate(videos, 1):
+                print(f"{i}. {video['title']} ({video['duration']})")
+                print(f"   Channel: {video['channel']}")
+                print(f"   URL: {video['url']}")
         except Exception as e:
             print(f"Error: {str(e)}")
 
-def test_chapter_api():
-    """Test the ChapterAPI endpoint"""
-    print("\n=== Testing ChapterAPI endpoint ===")
+def test_video_api():
+    """Test the VideoResourcesAPI endpoint"""
+    print("\n=== Testing VideoResourcesAPI endpoint ===")
     
     test_cases = [
-        {"topic": "Machine Learning", "grade": "undergraduate"},
-        {"topic": "Biology", "grade": "high school"},
-        {"topic": "Art History", "grade": "college"},
-        # Add edge cases
-        {"topic": "", "grade": "high school"},  # Missing topic
-        {"topic": "Chemistry", "grade": ""},    # Missing grade
+        {"topic": "Machine Learning", "grade": "undergraduate", "chapter": "Neural Networks"},
+        {"topic": "Biology", "grade": "high school", "chapter": "Cell Structure"},
+        {"topic": "Art History", "grade": "college", "chapter": "Renaissance Art"},
+        # Edge cases
+        {"topic": "", "grade": "high school", "chapter": "Algebra"},  # Missing topic
+        {"topic": "Chemistry", "grade": "", "chapter": "Atomic Structure"},  # Missing grade
+        {"topic": "Physics", "grade": "college", "chapter": ""},  # Missing chapter
     ]
     
     for data in test_cases:
         print(f"\nTesting with data: {json.dumps(data)}")
         try:
             response = requests.post(
-                CHAPTER_API_URL,
+                VIDEO_API_URL,
                 json=data,
                 headers={"Content-Type": "application/json"}
             )
@@ -538,10 +595,10 @@ def test_chapter_api():
 
 if __name__ == "__main__":
     # Test the utility function directly
-    test_generate_chapter_names_directly()
+    test_get_video_resources_directly()
     
     # Test the API endpoint
-    test_chapter_api()
+    test_video_api()
     
     print("\nAll tests completed!")
 
@@ -643,16 +700,46 @@ def generate_chapter_names(topic: str, grade: str) -> List[str]:
 
 def get_video_resources(topic: str, grade: str, chapter_name: str) -> List[VideoResource]:
     query = f"{topic} {chapter_name} tutorial for {grade} grade"
-    results = YoutubeSearch(query, max_results=5).to_dict()
+    results = YoutubeSearch(query, max_results=20).to_dict()  # Get more results to filter from
     
     videos = []
-    for result in results[:4]:
-        videos.append({
-            "title": result["title"],
-            "url": f"https://youtube.com{result['url_suffix']}",
-            "channel": result["channel"],
-            "duration": result["duration"]
-        })
+    for result in results:
+        # Parse duration (format is either MM:SS or HH:MM:SS)
+        duration_str = result["duration"]
+        duration_parts = duration_str.split(':')
+        
+        try:
+            if len(duration_parts) == 2:  # MM:SS format
+                minutes = int(duration_parts[0])
+                seconds = int(duration_parts[1])
+                total_seconds = minutes * 60 + seconds
+            elif len(duration_parts) == 3:  # HH:MM:SS format
+                hours = int(duration_parts[0])
+                minutes = int(duration_parts[1])
+                seconds = int(duration_parts[2])
+                total_seconds = hours * 3600 + minutes * 60 + seconds
+            else:
+                continue  # Skip if duration format is unexpected
+            
+            # Convert to minutes for comparison
+            duration_minutes = total_seconds / 60
+            
+            # Check if duration is between 3 and 90 minutes
+            if 3 <= duration_minutes <= 90:
+                videos.append({
+                    "title": result["title"],
+                    "url": f"https://youtube.com{result['url_suffix']}",
+                    "channel": result["channel"],
+                    "duration": duration_str,
+                    "duration_minutes": round(duration_minutes, 1)  # Added for convenience
+                })
+                
+                # Stop when we have 4 qualifying videos
+                if len(videos) >= 4:
+                    break
+                    
+        except (ValueError, IndexError):
+            continue  # Skip if duration parsing fails
     
     return videos
 
@@ -990,7 +1077,7 @@ FILE: decentral_tutor/urls.py
 ================================================
 from django.contrib import admin
 from django.urls import path, include
-from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI  # Remove WalletAPI import
+from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI  # Remove WalletAPI import
 from django.views.generic import TemplateView
 from core.api import get_csrf_token
 
@@ -999,6 +1086,7 @@ urlpatterns = [
     path('api/login/', FirebaseLoginAPI.as_view(), name='api_login'),
     path('api/dashboard/', DashboardAPI.as_view(), name='api_dashboard'),
     path('api/chapters/', ChapterAPI.as_view(), name='api_chapters'),
+    path('api/videos/', VideoResourcesAPI.as_view(), name='api_videos'),
     path('api/csrf/', get_csrf_token, name='api_csrf'),
     # Remove wallet path completely
     path('', TemplateView.as_view(template_name='index.html')),
@@ -1441,7 +1529,7 @@ FILE: frontend/src/pages/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { getCsrfToken } from "../utils/api"; // Adjust the import path
-import { BookOpen, Sparkles, GraduationCap, AlertCircle } from 'lucide-react';
+import { BookOpen, Sparkles, GraduationCap, AlertCircle } from "lucide-react";
 
 function Dashboard() {
   const [topic, setTopic] = useState("");
@@ -1451,11 +1539,12 @@ function Dashboard() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false); // ⬅️ new
   const [csrfToken, setCsrfToken] = useState(null);
+  const [videos, setVideos] = useState([]);
   const gradeOptions = [
-    { value: 'school', label: 'Elementary School', icon: '🎒' },
-    { value: 'high school', label: 'High School', icon: '📚' },
-    { value: 'college', label: 'College', icon: '🎓' },
-    { value: 'phd', label: 'PhD Level', icon: '🔬' }
+    { value: "school", label: "Elementary School", icon: "🎒" },
+    { value: "high school", label: "High School", icon: "📚" },
+    { value: "college", label: "College", icon: "🎓" },
+    { value: "phd", label: "PhD Level", icon: "🔬" },
   ];
 
   const API_BASE = import.meta.env.VITE_API_BASE;
@@ -1501,6 +1590,36 @@ function Dashboard() {
     }
   };
 
+  const fetchVideoResources = async (e) => {
+    const chapter = e.target.innerHTML.trim();
+
+    if (!topic?.trim()) return setError("Topic cannot be blank");
+    if (!grade?.trim()) return setError("Grade cannot be blank");
+    if (!chapter) return setError("Chapter cannot be blank");
+
+    try {
+      setError("");
+
+      const res = await axios.post(
+        `${API_BASE}/videos/`,
+        { topic, grade, chapter },
+        {
+          withCredentials: true,
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Video response:", res.data);
+      setVideos(res.data?.data?.videos || []);
+    } catch (err) {
+      const backendMsg = err?.response?.data?.error;
+      setError(backendMsg || err.message || "Failed to fetch videos");
+      setVideos([]);
+    }
+  };
   return (
     <div className="max-w-2xl mx-auto mt-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-2xl rounded-3xl border border-blue-100">
       {/* Header */}
@@ -1555,7 +1674,12 @@ function Dashboard() {
             <GraduationCap className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
             <div className="absolute right-4 top-4 w-5 h-5 text-gray-400 pointer-events-none">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>
@@ -1632,7 +1756,7 @@ function Dashboard() {
               {chapters.length}
             </span>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {chapters.map((chapter, i) => (
               <div
@@ -1644,7 +1768,11 @@ function Dashboard() {
                     {i + 1}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-800 group-hover:text-indigo-700 transition-colors">
+                    <h4
+                      key={i}
+                      onClick={fetchVideoResources}
+                      className="font-medium text-gray-800 group-hover:text-indigo-700 transition-colors cursor-pointer"
+                    >
                       {chapter}
                     </h4>
                   </div>
@@ -1653,6 +1781,18 @@ function Dashboard() {
             ))}
           </div>
         </div>
+      )}
+       {/* Display fetched videos */}
+      {videos.length > 0 && (
+        <ul className="mt-4 space-y-2">
+          {videos.map((v, i) => (
+            <li key={i}>
+              <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                {v.title}
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

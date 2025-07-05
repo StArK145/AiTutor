@@ -176,3 +176,57 @@ class VideoResourcesAPI(APIView):
                 'error': str(e),
                 'message': 'Failed to fetch video resources'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+            
+from .utils import get_web_resources  # Make sure this is imported at the top
+
+class WebResourcesAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            # Get topic, grade and chapter from request data
+            topic = request.data.get('topic')
+            grade = request.data.get('grade')
+            chapter = request.data.get('chapter')
+            
+            # Validate required fields
+            if not topic:
+                return Response(
+                    {'error': 'Topic is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not grade:
+                return Response(
+                    {'error': 'Grade/level is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not chapter:
+                return Response(
+                    {'error': 'Chapter name is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get web resources (limited to 4 by the utility function)
+            websites = get_web_resources(topic, grade, chapter)
+            
+            # Return success response with web resources
+            return JsonResponse({
+                'status': True,
+                'message': 'Web resources fetched successfully',
+                'data': {
+                    'topic': topic,
+                    'grade': grade,
+                    'chapter': chapter,
+                    'websites': websites
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Return error response
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to fetch web resources'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
