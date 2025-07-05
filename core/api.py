@@ -61,3 +61,25 @@ class DashboardAPI(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
         return Response({"message": "Dashboard API"}, status=status.HTTP_200_OK)
+    
+    
+import json
+from utils import generate_chapter_names  # Importing from Ch.py
+
+def get_chapters_json(topic: str, grade: str) -> str:
+    """
+    Takes topic and grade as input, returns JSON list of 10 chapters
+    
+    Args:
+        topic: Study topic (e.g., "Machine Learning")
+        grade: Education level (e.g., "college")
+        
+    Returns:
+        JSON string with list of chapter names
+    """
+    try:
+        chapters = generate_chapter_names(topic, grade)
+        return json.dumps({"chapters": chapters}, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
