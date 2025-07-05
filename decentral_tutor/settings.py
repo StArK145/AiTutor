@@ -71,7 +71,7 @@ ROOT_URLCONF = 'decentral_tutor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'frontend/build')],  # Point to React build
+        'DIRS': [os.path.join(BASE_DIR, 'frontend','build')],  # Point to React build
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -115,7 +115,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For production
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend/build/static'),  # React static files
+    os.path.join(BASE_DIR, 'frontend', 'build', 'static'),  # React static files
 ]
 
 # Default primary key field type
@@ -135,6 +135,9 @@ REST_FRAMEWORK = {
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins during development
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",  # your Vite dev server
+]
 # Authentication URLs (removed redirects - handled by React)
 # LOGIN_REDIRECT_URL = 'dashboard'  # Removed
 # LOGOUT_REDIRECT_URL = 'home'      # Removed
