@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { getCsrfToken } from "../utils/api"; // Adjust the import path
-import { BookOpen, Sparkles, GraduationCap, AlertCircle } from 'lucide-react';
+import { BookOpen, Sparkles, GraduationCap, AlertCircle } from "lucide-react";
 
 function Dashboard() {
   const [topic, setTopic] = useState("");
@@ -11,11 +11,12 @@ function Dashboard() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false); // ⬅️ new
   const [csrfToken, setCsrfToken] = useState(null);
+  const [videos, setVideos] = useState([]);
   const gradeOptions = [
-    { value: 'school', label: 'Elementary School', icon: '🎒' },
-    { value: 'high school', label: 'High School', icon: '📚' },
-    { value: 'college', label: 'College', icon: '🎓' },
-    { value: 'phd', label: 'PhD Level', icon: '🔬' }
+    { value: "school", label: "Elementary School", icon: "🎒" },
+    { value: "high school", label: "High School", icon: "📚" },
+    { value: "college", label: "College", icon: "🎓" },
+    { value: "phd", label: "PhD Level", icon: "🔬" },
   ];
 
   const API_BASE = import.meta.env.VITE_API_BASE;
@@ -61,6 +62,36 @@ function Dashboard() {
     }
   };
 
+  const fetchVideoResources = async (e) => {
+    const chapter = e.target.innerHTML.trim();
+
+    if (!topic?.trim()) return setError("Topic cannot be blank");
+    if (!grade?.trim()) return setError("Grade cannot be blank");
+    if (!chapter) return setError("Chapter cannot be blank");
+
+    try {
+      setError("");
+
+      const res = await axios.post(
+        `${API_BASE}/videos/`,
+        { topic, grade, chapter },
+        {
+          withCredentials: true,
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Video response:", res.data);
+      setVideos(res.data?.data?.videos || []);
+    } catch (err) {
+      const backendMsg = err?.response?.data?.error;
+      setError(backendMsg || err.message || "Failed to fetch videos");
+      setVideos([]);
+    }
+  };
   return (
     <div className="max-w-2xl mx-auto mt-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-2xl rounded-3xl border border-blue-100">
       {/* Header */}
@@ -115,7 +146,12 @@ function Dashboard() {
             <GraduationCap className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
             <div className="absolute right-4 top-4 w-5 h-5 text-gray-400 pointer-events-none">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>
@@ -192,7 +228,7 @@ function Dashboard() {
               {chapters.length}
             </span>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {chapters.map((chapter, i) => (
               <div
@@ -204,7 +240,11 @@ function Dashboard() {
                     {i + 1}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-800 group-hover:text-indigo-700 transition-colors">
+                    <h4
+                      key={i}
+                      onClick={fetchVideoResources}
+                      className="font-medium text-gray-800 group-hover:text-indigo-700 transition-colors cursor-pointer"
+                    >
                       {chapter}
                     </h4>
                   </div>
@@ -213,6 +253,18 @@ function Dashboard() {
             ))}
           </div>
         </div>
+      )}
+       {/* Display fetched videos */}
+      {videos.length > 0 && (
+        <ul className="mt-4 space-y-2">
+          {videos.map((v, i) => (
+            <li key={i}>
+              <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                {v.title}
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

@@ -158,7 +158,7 @@ class VideoResourcesAPI(APIView):
             videos = get_video_resources(topic, grade, chapter)
             
             # Return success response with videos
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'message': 'Video resources fetched successfully',
                 'data': {
