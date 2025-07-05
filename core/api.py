@@ -63,23 +63,53 @@ class DashboardAPI(APIView):
         return Response({"message": "Dashboard API"}, status=status.HTTP_200_OK)
     
     
-import json
-from utils import generate_chapter_names  # Importing from Ch.py
+# Add to core/api.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from .utils import generate_chapter_names  # Make sure to import the function
 
-def get_chapters_json(topic: str, grade: str) -> str:
-    """
-    Takes topic and grade as input, returns JSON list of 10 chapters
-    
-    Args:
-        topic: Study topic (e.g., "Machine Learning")
-        grade: Education level (e.g., "college")
-        
-    Returns:
-        JSON string with list of chapter names
-    """
-    try:
-        chapters = generate_chapter_names(topic, grade)
-        return json.dumps({"chapters": chapters}, indent=2)
-    except Exception as e:
-        return json.dumps({"error": str(e)})
+class ChapterAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            # Get topic and grade from request data
+            topic = request.data.get('topic')
+            grade = request.data.get('grade')
+            
+            # Validate required fields
+            if not topic:
+                return Response(
+                    {'error': 'Topic is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not grade:
+                return Response(
+                    {'error': 'Grade/level is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Generate chapters
+            chapters = generate_chapter_names(topic, grade)
+            
+            # Return success response with chapters
+            return Response({
+                'status': True,
+                'message': 'Chapters generated successfully',
+                'data': {
+                    'topic': topic,
+                    'grade': grade,
+                    'chapters': chapters
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Return error response
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to generate chapters'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
