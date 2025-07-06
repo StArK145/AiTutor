@@ -1,349 +1,169 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { getCsrfToken } from "../utils/api"; // Adjust the import path
-import { BookOpen, Sparkles, GraduationCap, AlertCircle } from "lucide-react";
+// Dashboard.jsx
+import React, { useState } from "react";
+import {
+  LayoutDashboard,
+  History,
+  ScanBarcode,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  User,
+  Database,
+} from "lucide-react";
 
-function Dashboard() {
-  const [topic, setTopic] = useState("");
-  const [grade, setGrade] = useState("");
-  const [chapters, setChapters] = useState([]);
-  const [error, setError] = useState("");
-  const [formError, setFormError] = useState("");
-  const [loading, setLoading] = useState(false); // ⬅️ new
-  const [csrfToken, setCsrfToken] = useState(null);
-  const [videos, setVideos] = useState([]);
-  const [websites, setWebsites] = useState([]);
-  const gradeOptions = [
-    { value: "school", label: "Elementary School", icon: "🎒" },
-    { value: "high school", label: "High School", icon: "📚" },
-    { value: "college", label: "College", icon: "🎓" },
-    { value: "phd", label: "PhD Level", icon: "🔬" },
-  ];
+// 👉 slot in your real screens here
+import Resources from "../components/Resources"; // Adjust the import path
+import ResourcesHistory from "../components/ResourcesHistory"; // Adjust the import path
+import Scanner from "../components/Scanner"; // Adjust the import path
 
-  const API_BASE = import.meta.env.VITE_API_BASE;
+const TAB_CONFIG = [
+  { id: "resources", label: "Resources", icon: LayoutDashboard },
+  { id: "history", label: "Resources History", icon: History },
+  { id: "scanner", label: "Scanner", icon: ScanBarcode },
+];
 
-  useEffect(() => {
-    (async () => {
-      const token = await getCsrfToken();
-      if (token) setCsrfToken(token);
-    })();
-  }, []);
+export default function Dashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("resources");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const generateChapters = async () => {
-    if (!topic.trim() || !grade.trim()) {
-      setFormError("Please fill in both the topic and grade.");
-      setChapters([]);
-      return;
-    }
+  const CurrentScreen = {
+    resources: Resources,
+    history: ResourcesHistory,
+    scanner: Scanner,
+  }[activeTab];
 
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        `${API_BASE}/chapters/`,
-        { topic, grade },
-        {
-          withCredentials: true,
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("Response from server:", res.data);
-
-      // 👇 grab the array from res.data.data.chapters
-      setChapters(res.data?.data?.chapters || []);
-      setError("");
-      setFormError("");
-    } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
-      setChapters([]);
-    } finally {
-      setLoading(false);
-    }
+  const getTabTitle = (tabId) => {
+    const tab = TAB_CONFIG.find(t => t.id === tabId);
+    return tab ? tab.label : "Dashboard";
   };
 
-  const fetchVideoResources = async (chapter) => {
-
-    if (!topic?.trim()) return setError("Topic cannot be blank");
-    if (!grade?.trim()) return setError("Grade cannot be blank");
-    if (!chapter) return setError("Chapter cannot be blank");
-
-    try {
-      setError("");
-
-      const res = await axios.post(
-        `${API_BASE}/videos/`,
-        { topic, grade, chapter },
-        {
-          withCredentials: true,
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("Video response:", res.data);
-      setVideos(res.data?.data?.videos || []);
-    } catch (err) {
-      const backendMsg = err?.response?.data?.error;
-      setError(backendMsg || err.message || "Failed to fetch videos");
-      setVideos([]);
-    }
+  const getTabDescription = (tabId) => {
+    const descriptions = {
+      resources: "Manage and view your resource collection",
+      history: "Track your resource access history",
+      scanner: "Scan and identify new resources"
+    };
+    return descriptions[tabId] || "Navigate through your dashboard";
   };
-
-  // keep in the same component file or pull out to utils if you prefer
-  const fetchWebResources = async ({ topic, grade, chapter }) => {
-    const csrfToken = await getCsrfToken();
-
-    const res = await axios.post(
-      `${API_BASE}/websites/`, // adjust if your route is different
-      { topic, grade, chapter },
-      {
-        withCredentials: true,
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    return res.data?.data?.websites || [];
-  };
-
-  const handleChapterClick = async (e) => {
-  const chapter = e.target.innerHTML;
-
-  if (!topic?.trim()) return setError("Topic cannot be blank");
-  if (!grade?.trim()) return setError("Grade cannot be blank");
-  if (!chapter) return setError("Chapter cannot be blank");
-
-  try {
-    setError("");
-    setLoading(true);
-
-    // Call video fetch (updates state inside)
-    await fetchVideoResources(chapter);
-
-    // Call website fetch and set state
-    const websitesArr = await fetchWebResources({ topic, grade, chapter });
-    setWebsites(websitesArr);
-  } catch (err) {
-    const backendMsg = err?.response?.data?.error;
-    setError(backendMsg || err.message || "Failed to fetch resources");
-    setVideos([]);
-    setWebsites([]);
-  } finally {
-    setLoading(false);
-  }
-};
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-2xl rounded-3xl border border-blue-100">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-          <BookOpen className="w-8 h-8 text-white" />
+    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+      {/* ───────────── Sidebar ───────────── */}
+      <aside
+        className={`bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 transition-all duration-300 ease-in-out border-r border-slate-700
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          ${sidebarCollapsed ? "w-16" : "w-64"}
+          fixed sm:static inset-y-0 z-40 sm:translate-x-0 shadow-xl`}
+      >
+        {/* Header with logo and collapse button */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+                <Database className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-semibold text-lg">Resource Hub</span>
+            </div>
+          )}
+          
+          {/* Mobile close button */}
+          <button
+            className="p-1 rounded-lg hover:bg-slate-700 transition-colors sm:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
+          
+          {/* Desktop collapse button */}
+          <button
+            className="p-1 rounded-lg hover:bg-slate-700 transition-colors hidden sm:block"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
         </div>
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-          AI Chapter Generator
-        </h2>
-        <p className="text-gray-600 text-sm">
-          Generate comprehensive chapter outlines for any topic
-        </p>
-      </div>
 
-      <div className="space-y-6">
-        {/* Topic Input */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Topic
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Enter your topic (e.g., Machine Learning, History of Rome)"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="w-full p-4 pl-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-            />
-            <Sparkles className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
-          </div>
-        </div>
-
-        {/* Grade Level Select */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Academic Level
-          </label>
-          <div className="relative">
-            <select
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className="w-full p-4 pl-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none cursor-pointer"
+        {/* Navigation menu */}
+        <nav className="mt-6 space-y-2 px-3">
+          {TAB_CONFIG.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`group flex items-center w-full px-3 py-3 text-left gap-3 rounded-lg transition-all duration-200
+                ${activeTab === id 
+                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-blue-400 shadow-lg" 
+                  : "hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                }`}
+              title={sidebarCollapsed ? label : undefined}
             >
-              <option value="">Select academic level</option>
-              {gradeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.icon} {option.label}
-                </option>
-              ))}
-            </select>
-            <GraduationCap className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
-            <div className="absolute right-4 top-4 w-5 h-5 text-gray-400 pointer-events-none">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <Icon
+                size={20}
+                className={`shrink-0 transition-colors ${
+                  activeTab === id ? "text-blue-400" : "text-slate-400 group-hover:text-blue-300"
+                }`}
+              />
+              {!sidebarCollapsed && (
+                <span className="font-medium">{label}</span>
+              )}
+              {activeTab === id && (
+                <div className="ml-auto w-2 h-2 bg-blue-400 rounded-full"></div>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom section */}
+        {!sidebarCollapsed && (
+          <div className="mt-auto p-4 border-t border-slate-700">
+            <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">User</p>
+                <p className="text-xs text-slate-400 truncate">Admin</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Error Message */}
-        {formError && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <p className="text-red-700 text-sm">{formError}</p>
-          </div>
         )}
+      </aside>
 
-        {/* Generate Button */}
-        <button
-          onClick={generateChapters}
-          disabled={loading}
-          className={`w-full font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg
-            ${
-              loading
-                ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed scale-100"
-                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98]"
-            } text-white`}
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-3">
-              <svg
-                className="w-5 h-5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  d="M4 12a8 8 0 018-8"
-                  strokeWidth="4"
-                />
-              </svg>
-              <span>Generating Chapters...</span>
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              Generate Chapters
-            </span>
-          )}
-        </button>
+      {/* ───────────── Main Content Area ───────────── */}
+      <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900 min-w-0">
+       
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            {CurrentScreen ? (
+              <CurrentScreen />
+            ) : (
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 text-center">
+                <div className="p-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <X className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                  Tab Not Found
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400">
+                  The requested tab could not be found. Please select a valid option from the sidebar.
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
-      {/* General Error Message */}
-      {error && (
-        <div className="mt-6 flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-
-      {/* Generated Chapters */}
-      {chapters.length > 0 && (
-        <div className="mt-8 animate-in fade-in duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-xl font-semibold text-gray-800">
-              Generated Chapters
-            </h3>
-            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
-              {chapters.length}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {chapters.map((chapter, i) => (
-              <div
-                key={i}
-                className="group bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-2 border-gray-200 hover:border-blue-300 rounded-xl p-4 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md transform hover:scale-[1.02]"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1">
-                    <h4 onClick={(e) => handleChapterClick(e)}>{chapter}</h4>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {/* loading spinner */}
-      {loading && <p>Loading…</p>}
-
-      {/* error */}
-      {error && <p className="text-red-500">{error}</p>}
-
-      {/* videos */}
-      {videos.length > 0 && (
-        <>
-          <h3 className="font-semibold mt-4">Videos</h3>
-          <ul className="space-y-1">
-            {videos.map((v, i) => (
-              <li key={i}>
-                <a
-                  href={v.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  {v.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {/* websites */}
-      {websites.length > 0 && (
-        <>
-          <h3 className="font-semibold mt-4">Websites</h3>
-          <ul className="space-y-1">
-            {websites.map((w, i) => (
-              <li key={i}>
-                <a
-                  href={w.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  {w.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 sm:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
     </div>
   );
 }
-
-export default Dashboard;
