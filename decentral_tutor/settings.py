@@ -171,3 +171,12 @@ CORS_ALLOW_HEADERS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Add to the bottom of settings.py
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
+
+# Create vectorstores directory
+VECTORSTORES_DIR = os.path.join(BASE_DIR, 'vectorstores')
+os.makedirs(VECTORSTORES_DIR, exist_ok=True)

@@ -1,11 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from django.contrib.auth import get_user_model
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
+from .pdf_processor import PDFProcessor
+import os
+from django.conf import settings
+
 
 User = get_user_model()
 
@@ -229,4 +234,78 @@ class WebResourcesAPI(APIView):
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to fetch web resources'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class PDFQAAPI(APIView):
+    parser_classes = [MultiPartParser]
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        # Handle PDF upload
+        pdf_file = request.FILES.get('pdf')
+        if not pdf_file:
+            return Response(
+                {'error': 'No PDF file provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Save the uploaded file temporarily
+        upload_dir = os.path.join(settings.BASE_DIR, 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, pdf_file.name)
+        
+        with open(file_path, 'wb+') as destination:
+            for chunk in pdf_file.chunks():
+                destination.write(chunk)
+
+        # Process the PDF
+        try:
+            processor = PDFProcessor()
+            chunks = processor.process_pdf(file_path)
+            store_name = f"book_{os.path.splitext(pdf_file.name)[0]}"
+            processor.create_vector_store(chunks, store_name)
+            
+            return Response({
+                'status': True,
+                'message': 'PDF processed successfully',
+                'vector_store': store_name
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to process PDF'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class QuestionAnswerAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        vector_store = request.data.get('vector_store')
+        question = request.data.get('question')
+        
+        if not vector_store or not question:
+            return Response(
+                {'error': 'Both vector_store and question are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            processor = PDFProcessor()
+            vs = processor.load_vector_store(vector_store)
+            answer = processor.answer_question(vs, question)
+            
+            return Response({
+                'status': True,
+                'data': answer
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to answer question'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
