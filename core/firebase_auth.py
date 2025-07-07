@@ -1,10 +1,11 @@
 import firebase_admin
 from firebase_admin import auth, credentials
 from django.contrib.auth import get_user_model
-from rest_framework import authentication, exceptions
+from rest_framework import authentication
+from rest_framework.exceptions import AuthenticationFailed
 import os
 
-# Initialize Firebase app once
+# Initialize Firebase Admin SDK once
 if not firebase_admin._apps:
     cred = credentials.Certificate({
         "type": "service_account",
@@ -21,30 +22,30 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 User = get_user_model()
+
 class FirebaseAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        auth_header = request.META.get("HTTP_AUTHORIZATION")
-        if not auth_header:
-            return None
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        if not auth_header.startswith("Bearer "):
+            return None  # No token provided
 
-        id_token = auth_header.split(" ").pop()
+        id_token = auth_header.split("Bearer ")[1]
+
         try:
             decoded_token = auth.verify_id_token(id_token)
             firebase_uid = decoded_token.get("uid")
             email = decoded_token.get("email")
         except Exception as e:
             print(f"Firebase token verification failed: {str(e)}")
-            return None
+            raise AuthenticationFailed("Invalid or expired Firebase ID token")
 
-        if not firebase_uid:
-            return None
+        if not firebase_uid or not email:
+            raise AuthenticationFailed("Missing UID or email in Firebase token")
 
         try:
             user = User.objects.get(firebase_uid=firebase_uid)
-            return (user, None)
         except User.DoesNotExist:
             try:
-                # Create new user
                 username = email.split("@")[0]
                 base_username = username
                 counter = 1
@@ -58,7 +59,8 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
                     username=username
                 )
                 print(f"Created new user: {user}")
-                return (user, None)
             except Exception as e:
                 print(f"User creation failed: {str(e)}")
-                return None
+                raise AuthenticationFailed("User creation failed")
+
+        return (user, None)
