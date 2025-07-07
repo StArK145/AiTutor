@@ -3,9 +3,9 @@ import time
 import requests
 import google.generativeai as genai
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
 from langchain.schema import Document
 import re
 import hashlib
@@ -67,13 +67,17 @@ class PDFProcessor:
         print("Creating embeddings and vector store...")
         vectorstore = FAISS.from_documents(chunks, self.embedding_model)
         print(f"Vector store created with {vectorstore.index.ntotal} embeddings")
-        vectorstore.save_local(os.path.join(settings.BASE_DIR, "vectorstores", store_name))
-        print("Vector store saved locally")
+        
+        # Save to user-specific directory
+        store_path = os.path.join(settings.BASE_DIR, "vectorstores", store_name)
+        vectorstore.save_local(store_path)
+        print(f"Vector store saved at {store_path}")
         return vectorstore
 
     def load_vector_store(self, store_name):
+        store_path = os.path.join(settings.BASE_DIR, "vectorstores", store_name)
         return FAISS.load_local(
-            os.path.join(settings.BASE_DIR, "vectorstores", store_name),
+            store_path,
             self.embedding_model,
             allow_dangerous_deserialization=True
         )

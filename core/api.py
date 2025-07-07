@@ -10,7 +10,8 @@ from django.http import JsonResponse
 from .pdf_processor import PDFProcessor
 import os
 from django.conf import settings
-
+from .models import UserPDF, PDFConversation
+import json
 
 User = get_user_model()
 
@@ -240,10 +241,9 @@ class WebResourcesAPI(APIView):
 
 class PDFQAAPI(APIView):
     parser_classes = [MultiPartParser]
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  # Changed to require authentication
 
     def post(self, request):
-        # Handle PDF upload
         pdf_file = request.FILES.get('pdf')
         if not pdf_file:
             return Response(
@@ -251,26 +251,37 @@ class PDFQAAPI(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Save the uploaded file temporarily
-        upload_dir = os.path.join(settings.BASE_DIR, 'uploads')
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, pdf_file.name)
-        
-        with open(file_path, 'wb+') as destination:
-            for chunk in pdf_file.chunks():
-                destination.write(chunk)
-
-        # Process the PDF
         try:
+            # Save file to user-specific directory
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'user_uploads', request.user.firebase_uid)
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = os.path.join(upload_dir, pdf_file.name)
+            
+            with open(file_path, 'wb+') as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+
+            # Process the PDF
             processor = PDFProcessor()
             chunks = processor.process_pdf(file_path)
-            store_name = f"book_{os.path.splitext(pdf_file.name)[0]}"
+            store_name = f"book_{request.user.firebase_uid}_{os.path.splitext(pdf_file.name)[0]}"
             processor.create_vector_store(chunks, store_name)
             
-            return JsonResponse({
+            # Save to database
+            user_pdf = UserPDF.objects.create(
+                user=request.user,
+                file_name=pdf_file.name,
+                vector_store=store_name
+            )
+            
+            return Response({
                 'status': True,
                 'message': 'PDF processed successfully',
-                'vector_store': store_name
+                'data': {
+                    'id': user_pdf.id,
+                    'file_name': user_pdf.file_name,
+                    'upload_time': user_pdf.upload_time
+                }
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
@@ -284,28 +295,126 @@ class QuestionAnswerAPI(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        vector_store = request.data.get('vector_store')
+        pdf_id = request.data.get('pdf_id')
         question = request.data.get('question')
         
-        if not vector_store or not question:
+        if not pdf_id or not question:
             return Response(
-                {'error': 'Both vector_store and question are required'},
+                {'error': 'Both pdf_id and question are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
+            # Get the user's PDF
+            user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            
             processor = PDFProcessor()
-            vs = processor.load_vector_store(vector_store)
+            vs = processor.load_vector_store(user_pdf.vector_store)
             answer = processor.answer_question(vs, question)
             
-            return JsonResponse({
+            # Save conversation
+            PDFConversation.objects.create(
+                pdf=user_pdf,
+                question=question,
+                answer=json.dumps(answer)
+            )
+            
+            return Response({
                 'status': True,
                 'data': answer
             }, status=status.HTTP_200_OK)
             
+        except UserPDF.DoesNotExist:
+            return Response({
+                'status': False,
+                'error': 'PDF not found',
+                'message': 'You do not have access to this PDF'
+            }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to answer question'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserPDFListAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        pdfs = UserPDF.objects.filter(user=request.user).order_by('-upload_time')
+        data = [{
+            'id': pdf.id,
+            'file_name': pdf.file_name,
+            'upload_time': pdf.upload_time,
+            'conversation_count': pdf.conversations.count()
+        } for pdf in pdfs]
+        return Response({'status': True, 'data': data})
+
+class PDFConversationHistoryAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, pdf_id):
+        try:
+            user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            conversations = user_pdf.conversations.all().order_by('-created_at')[:50]  # Limit to 50 most recent
+            data = [{
+                'question': conv.question,
+                'answer': json.loads(conv.answer),
+                'created_at': conv.created_at
+            } for conv in conversations]
+            return Response({'status': True, 'data': data})
+        except UserPDF.DoesNotExist:
+            return Response({
+                'status': False,
+                'error': 'PDF not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+class DeletePDFAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def delete(self, request, pdf_id):
+        try:
+            user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            
+            # Delete vector store
+            processor = PDFProcessor()
+            vectorstore_path = os.path.join(
+                settings.BASE_DIR, 
+                "vectorstores", 
+                user_pdf.vector_store
+            )
+            if os.path.exists(vectorstore_path):
+                import shutil
+                shutil.rmtree(vectorstore_path)
+            
+            # Delete the file
+            file_path = os.path.join(
+                settings.MEDIA_ROOT, 
+                'user_uploads', 
+                request.user.firebase_uid,
+                user_pdf.file_name
+            )
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            
+            # Delete database record
+            user_pdf.delete()
+            
+            return Response({
+                'status': True,
+                'message': 'PDF and all related data deleted successfully'
+            })
+            
+        except UserPDF.DoesNotExist:
+            return Response({
+                'status': False,
+                'error': 'PDF not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to delete PDF'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+

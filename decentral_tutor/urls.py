@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI, WebResourcesAPI, PDFQAAPI, QuestionAnswerAPI # Remove WalletAPI import
+from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI, WebResourcesAPI, PDFQAAPI, QuestionAnswerAPI, UserPDFListAPI, DeletePDFAPI, PDFConversationHistoryAPI # Remove WalletAPI import
 from django.views.generic import TemplateView
 from core.api import get_csrf_token
 
@@ -14,6 +14,9 @@ urlpatterns = [
     path('api/csrf/', get_csrf_token, name='api_csrf'),
     path('api/process-pdf/', PDFQAAPI.as_view(), name='api_process_pdf'),
     path('api/answer-question/', QuestionAnswerAPI.as_view(), name='api_answer_question'),
+    path('api/user/pdfs/', UserPDFListAPI.as_view(), name='api_user_pdfs'),
+    path('api/user/pdfs/<int:pdf_id>/', DeletePDFAPI.as_view(), name='api_delete_pdf'),
+    path('api/user/pdfs/<int:pdf_id>/conversations/', PDFConversationHistoryAPI.as_view(), name='api_pdf_conversations'),
     path('', TemplateView.as_view(template_name='index.html')),
     path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]

@@ -45,3 +45,32 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def has_module_perms(self, app_label):
         return self.is_staff
+    
+    def get_upload_dir(self, filename):
+        return f"user_uploads/{self.firebase_uid}/{filename}"
+    
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
+
+
+class UserPDF(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pdfs')
+    file_name = models.CharField(max_length=255)
+    vector_store = models.CharField(max_length=255)
+    upload_time = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s PDF: {self.file_name}"
+    
+class PDFConversation(models.Model):
+    pdf = models.ForeignKey(UserPDF, on_delete=models.CASCADE, related_name='conversations')
+    question = models.TextField()
+    answer = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Conversation about {self.pdf.file_name}"
