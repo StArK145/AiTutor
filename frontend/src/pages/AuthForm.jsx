@@ -34,7 +34,7 @@ const AuthForm = () => {
       );
       const token = await user.getIdToken();
       localStorage.setItem('token', token);
-      alert('Login successful!');
+
       navigate('/dashboard');
     } catch (error) {
       console.error(error);
@@ -66,7 +66,6 @@ const AuthForm = () => {
         },
       );
 
-      alert('Signup successful! Please log in.');
       setIsLogin(true);
     } catch (error) {
       console.error(error);
@@ -97,7 +96,6 @@ const AuthForm = () => {
           },
         );
       }
-      alert('Login successful via Google!');
       navigate('/dashboard');
     } catch (error) {
       console.error(error);

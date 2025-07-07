@@ -267,7 +267,7 @@ class PDFQAAPI(APIView):
             store_name = f"book_{os.path.splitext(pdf_file.name)[0]}"
             processor.create_vector_store(chunks, store_name)
             
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'message': 'PDF processed successfully',
                 'vector_store': store_name
@@ -298,7 +298,7 @@ class QuestionAnswerAPI(APIView):
             vs = processor.load_vector_store(vector_store)
             answer = processor.answer_question(vs, question)
             
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'data': answer
             }, status=status.HTTP_200_OK)
