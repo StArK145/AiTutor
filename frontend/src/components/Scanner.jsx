@@ -158,9 +158,11 @@ function Scanner() {
       console.log("Sending question to backend:", pdfId);
       
       const res = await askPdfQuestion(pdfId, question);
+      console.log("Received response from backend:", res.data);
+      
       const aiMessage = {
         type: "ai",
-        text: res?.data || "No response from server.",
+        text: res?.data?.answer || "No response from server.",
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {

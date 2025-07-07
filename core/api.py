@@ -14,6 +14,9 @@ from .models import UserPDF, PDFConversation
 import json
 from .firebase_auth import FirebaseAuthentication
 from rest_framework.permissions import IsAuthenticated
+import traceback
+from django.contrib.auth import get_user_model
+from .utils import generate_chapter_names  # Ensure this utility function is defined in utils.py
 User = get_user_model()
 
 
@@ -304,22 +307,45 @@ class QuestionAnswerAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        print("\n=== DEBUG: QuestionAnswerAPI Request ===")
+        print("Headers:", request.headers)
+        print("User:", request.user)
+        print("Request data:", request.data)
+        
         pdf_id = request.data.get('pdf_id')
         question = request.data.get('question')
         
         if not pdf_id or not question:
+            print("!! DEBUG: Missing pdf_id or question")
             return Response(
                 {'error': 'Both pdf_id and question are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            # Get the user's PDF
+            print(f"!! DEBUG: Looking for PDF ID {pdf_id} for user {request.user}")
             user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            print(f"!! DEBUG: Found PDF: {user_pdf.file_name}")
+            
+            # Verify vector store exists
+            vs_path = os.path.join(settings.BASE_DIR, "vectorstores", user_pdf.vector_store)
+            print(f"!! DEBUG: Vector store path: {vs_path}")
+            
+            if not os.path.exists(vs_path):
+                print("!! DEBUG: Vector store directory does not exist!")
+                return Response(
+                    {'error': 'Vector store not found. Please re-upload the PDF.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
             
             processor = PDFProcessor()
+            print("!! DEBUG: Loading vector store...")
             vs = processor.load_vector_store(user_pdf.vector_store)
+            print("!! DEBUG: Vector store loaded successfully")
+            
+            print("!! DEBUG: Generating answer...")
             answer = processor.answer_question(vs, question)
+            print("!! DEBUG: Answer generated:", answer)
             
             # Save conversation
             PDFConversation.objects.create(
@@ -328,21 +354,26 @@ class QuestionAnswerAPI(APIView):
                 answer=json.dumps(answer)
             )
             
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'data': answer
-            }, status=status.HTTP_200_OK)
+            })
             
         except UserPDF.DoesNotExist:
+            print("!! DEBUG: PDF not found or doesn't belong to user")
             return Response({
                 'status': False,
                 'error': 'PDF not found',
                 'message': 'You do not have access to this PDF'
             }, status=status.HTTP_404_NOT_FOUND)
+            
         except Exception as e:
+            print(f"!! DEBUG: Unexpected error: {str(e)}")
+            print(traceback.format_exc())  # This will print the full traceback
             return Response({
                 'status': False,
                 'error': str(e),
+                'traceback': traceback.format_exc(),
                 'message': 'Failed to answer question'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
