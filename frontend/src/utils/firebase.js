@@ -22,4 +22,11 @@ export const db   = getFirestore(app);     // 🗄️ Firestore  ← NEW
 // Analytics (only in browser, not SSR)
 export const analytics = (await isSupported()) ? getAnalytics(app) : null;
 
+// Inside firebase.js
+export const getFirebaseIdToken = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not logged in");
+  return await user.getIdToken();
+};
+
 export default app;

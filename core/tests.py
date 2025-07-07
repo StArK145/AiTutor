@@ -1,18 +1,19 @@
 import os
 import requests
 import json
-from typing import Optional, Dict, List
 
 BASE_URL = "http://localhost:8000"
-DEFAULT_PDF_PATH = "book.pdf"
 
-def get_auth_header(token: str) -> Dict[str, str]:
-    """Return authorization header with bearer token"""
-    return {"Authorization": f"Bearer {token}"}
+def get_auth_headers(token):
+    """Generate headers with Firebase token"""
+    return {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
 
-def upload_and_process_pdf(pdf_path: str, token: str) -> Optional[str]:
-    """Upload and process a PDF file with authentication"""
-    print(f"\nUploading PDF: {pdf_path}")
+def upload_and_process_pdf(pdf_path, token):
+    """Upload and process a PDF file"""
+    print(f"\nUploading and processing PDF: {pdf_path}")
     
     if not os.path.exists(pdf_path):
         print(f"Error: File not found at {pdf_path}")
@@ -20,74 +21,49 @@ def upload_and_process_pdf(pdf_path: str, token: str) -> Optional[str]:
 
     try:
         with open(pdf_path, 'rb') as f:
+            files = {'pdf': (os.path.basename(pdf_path), f)}
+            headers = get_auth_headers(token)
             response = requests.post(
-                f"{BASE_URL}/api/process-pdf/",
-                files={'pdf': (os.path.basename(pdf_path), f)},
-                headers=get_auth_header(token),
-                timeout=30
+                f"{BASE_URL}/api/process-pdf",  # Note: no trailing slash
+                files=files,
+                headers=headers
             )
         
         if response.status_code == 200:
             data = response.json()
             print("PDF processed successfully!")
             print(f"PDF ID: {data.get('data', {}).get('id')}")
+            print(f"File name: {data.get('data', {}).get('file_name')}")
             return data.get('data', {}).get('id')
-        
-        print(f"Error processing PDF: {response.status_code}")
-        print(response.json())
-        return None
+        else:
+            print(f"Error processing PDF: {response.status_code}")
+            print(response.json())
+            return None
             
     except Exception as e:
         print(f"Error uploading PDF: {str(e)}")
         return None
 
-def ask_question(pdf_id: str, question: str, token: str) -> Optional[Dict]:
-    """Ask a question about the processed PDF"""
-    print(f"\nAsking: {question}")
+def run_tests():
+    print("\n=== PDF Processing Test ===")
     
-    try:
-        response = requests.post(
-            f"{BASE_URL}/api/answer-question/",
-            json={'pdf_id': pdf_id, 'question': question},
-            headers=get_auth_header(token),
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            print("Answer received:")
-            print(json.dumps(data['data'], indent=2))
-            return data['data']
-        
-        print(f"Error answering question: {response.status_code}")
-        print(response.json())
-        return None
-            
-    except Exception as e:
-        print(f"Error asking question: {str(e)}")
-        return None
-
-def run_test(token: str):
-    """Run test with authenticated token"""
-    # Get valid PDF path
-    pdf_path = r"C:\Users\Lenovo\Desktop\Code For Bharat\Current\AiTutor\book2.pdf".strip() or DEFAULT_PDF_PATH
+    # Use a valid Firebase ID token (not UID)
+    firebase_token = "2IUpOTCYcLfJ1fLY8jItUCw11in1"
     
-    # Process PDF
-    pdf_id = upload_and_process_pdf(pdf_path, token)
-    if not pdf_id:
+    # PDF path - make sure this exists
+    pdf_path = r"C:\Users\Lenovo\Desktop\Code For Bharat\Current\AiTutor\book2.pdf"
+    
+    if not os.path.exists(pdf_path):
+        print(f"PDF file not found at {pdf_path}")
         return
-    
-    # Ask questions
-    while True:
-        question = input("\nEnter question (or 'quit' to exit): ").strip()
-        if question.lower() == 'quit':
-            break
-        ask_question(pdf_id, question, token)
+
+    # Step 1: Process the PDF
+    pdf_id = upload_and_process_pdf(pdf_path, firebase_token)
+    if not pdf_id:
+        print("Failed to process PDF. Exiting test.")
+        return
+
+    print("\nTest completed!")
 
 if __name__ == "__main__":
-    print("=== PDF QA Test ===")
-    token = "2IUpOTCYcLfJ1fLY8jItUCw11in1".strip()
-    if not token:
-        print("Error: Authentication token is required")
-    else:
-        run_test(token)
+    run_tests()

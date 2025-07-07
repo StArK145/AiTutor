@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import { getFirebaseIdToken } from './firebase';
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Create axios instance
@@ -24,6 +24,7 @@ export const apiRequest = async (method, url, data = null) => {
   try {
     // Get CSRF token first
     const csrfToken = await getCsrfToken();
+    const idToken = await getFirebaseIdToken();
     
     const config = {
       method,
@@ -31,6 +32,7 @@ export const apiRequest = async (method, url, data = null) => {
       withCredentials: true,
       headers: {
         'X-CSRFToken': csrfToken,
+        'Authorization': `Bearer ${idToken}`,
         'Content-Type': 'application/json',
       },
     };
