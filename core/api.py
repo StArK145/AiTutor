@@ -12,10 +12,13 @@ import os
 from django.conf import settings
 from .models import UserPDF, PDFConversation
 import json
-
+from .firebase_auth import FirebaseAuthentication
+from rest_framework.permissions import IsAuthenticated
 User = get_user_model()
 
+
 class FirebaseLoginAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -67,7 +70,8 @@ class FirebaseLoginAPI(APIView):
 
 
 class DashboardAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         return Response({"message": "Dashboard API"}, status=status.HTTP_200_OK)
     
@@ -82,7 +86,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
 class ChapterAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
@@ -134,7 +139,8 @@ def get_csrf_token(request):
 from .utils import get_video_resources
 
 class VideoResourcesAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
@@ -188,7 +194,8 @@ class VideoResourcesAPI(APIView):
 from .utils import get_web_resources  # Make sure this is imported at the top
 
 class WebResourcesAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
@@ -241,7 +248,8 @@ class WebResourcesAPI(APIView):
 
 class PDFQAAPI(APIView):
     parser_classes = [MultiPartParser]
-    permission_classes = [AllowAny]  # Changed to require authentication
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]# Changed to require authentication
 
     def post(self, request):
         pdf_file = request.FILES.get('pdf')
@@ -292,7 +300,8 @@ class PDFQAAPI(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class QuestionAnswerAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         pdf_id = request.data.get('pdf_id')
@@ -338,7 +347,8 @@ class QuestionAnswerAPI(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserPDFListAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         pdfs = UserPDF.objects.filter(user=request.user).order_by('-upload_time')
@@ -351,7 +361,8 @@ class UserPDFListAPI(APIView):
         return Response({'status': True, 'data': data})
 
 class PDFConversationHistoryAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pdf_id):
         try:
@@ -370,7 +381,8 @@ class PDFConversationHistoryAPI(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeletePDFAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, pdf_id):
         try:

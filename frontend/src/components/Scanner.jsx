@@ -1,9 +1,9 @@
 // Scanner.jsx
 import React, { useState, useEffect } from "react";
 import { uploadPdf, analyzeYoutube } from "../utils/contentScan";
-import { Document, Page,pdfjs } from 'react-pdf';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min?url'; 
-import { getCurrentUserUID } from "../utils/getCurrentUserUID"; // Adjust the import path
+import { Document, Page, pdfjs } from "react-pdf";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min?url";
+import { askPdfQuestion } from "../utils/contentScan";
 import {
   Upload,
   FileText,
@@ -37,16 +37,17 @@ function Scanner() {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState(null); // Backend result
   const [error, setError] = useState("");
-  const [firebaseUid, setUid] = useState(null);
-  const [activeTab, setActiveTab] = useState("form"); // "form" | "results"
-  useEffect(() => {
-    getCurrentUserUID()
-      .then(setUid)
-      .catch((err) => {
-        console.error("Failed to get UID:", err);
-        setError("User not logged in");
-      });
-  }, []);
+
+  const [activeTab, setActiveTab] = useState("form");
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      type: "ai",
+      text: `Hello! I've analyzed your ${
+        mode === "pdf" ? "PDF document" : "YouTube video"
+      }. What would you like to know about it?`,
+    },
+  ]); // "form" | "results"
 
   const modeOptions = [
     {
@@ -97,7 +98,7 @@ function Scanner() {
       if (mode === "pdf" && !file) {
         return setError("Please choose a PDF file to analyze.");
       } else {
-        let data = await uploadPdf(file,firebaseUid);
+        let data = await uploadPdf(file);
         setIsLoading(true);
         setResponse(data);
         setActiveTab("results");
@@ -140,6 +141,39 @@ function Scanner() {
   const prettyJson = (json) => JSON.stringify(json, null, 2);
 
   /* ---------- render ---------- */
+
+  const handleSend = async () => {
+    if (!question.trim()) return;
+    console.log("Sending question:", question);
+    
+    const pdfId = response?.data?.id;
+
+    const userMessage = { type: "user", text: question };
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+    
+
+    try {
+      console.log("Sending question to backend:", question);
+      console.log("Sending question to backend:", pdfId);
+      
+      const res = await askPdfQuestion(pdfId, question);
+      const aiMessage = {
+        type: "ai",
+        text: res?.data || "No response from server.",
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { type: "ai", text: "⚠️ Error getting answer." },
+      ]);
+    } finally {
+      setIsLoading(false);
+      setQuestion("");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* ---------------- TAB 1 : SCANNER FORM ---------------- */}
@@ -321,32 +355,39 @@ function Scanner() {
           {/* Two-Panel Layout */}
           <div className="flex h-[80vh]">
             {/* Left Panel - Chat Section */}
-            <div className="w-1/2 border-r border-slate-200 dark:border-slate-700 flex flex-col">
-              {/* Chat Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
-                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-                  Ask Questions
-                </h3>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  Chat about the content you've analyzed
-                </p>
-              </div>
-
+            <div className="flex flex-col h-full">
               {/* Chat Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Sample messages - replace with actual chat functionality */}
                 <div className="space-y-3">
-                  <div className="flex justify-start">
-                    <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3 max-w-[80%]">
-                      <p className="text-slate-900 dark:text-slate-100 text-sm">
-                        Hello! I've analyzed your{" "}
-                        {mode === "pdf" ? "PDF document" : "YouTube video"}.
-                        What would you like to know about it?
-                      </p>
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        msg.type === "user" ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`${
+                          msg.type === "user"
+                            ? "bg-green-100 dark:bg-green-700"
+                            : "bg-slate-100 dark:bg-slate-700"
+                        } rounded-lg p-3 max-w-[80%]`}
+                      >
+                        <p className="text-sm text-slate-900 dark:text-slate-100">
+                          {msg.text}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Add more messages here as needed */}
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3 max-w-[80%]">
+                        <p className="text-sm text-slate-900 dark:text-slate-100">
+                          Thinking...
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -355,10 +396,17 @@ function Scanner() {
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
                     placeholder="Ask a question about the content..."
                     className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm"
                   />
-                  <button className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition-colors">
+                  <button
+                    onClick={handleSend}
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition-colors"
+                  >
                     Send
                   </button>
                 </div>
