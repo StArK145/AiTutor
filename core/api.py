@@ -17,6 +17,11 @@ from rest_framework.permissions import IsAuthenticated
 import traceback
 from django.contrib.auth import get_user_model
 from .utils import generate_chapter_names  # Ensure this utility function is defined in utils.py
+from .yt_processor import YouTubeProcessor
+from .models import UserYouTubeVideo, YouTubeConversation
+from .yt_processor import YouTubeProcessor
+
+
 User = get_user_model()
 
 
@@ -33,7 +38,7 @@ class FirebaseLoginAPI(APIView):
         firebase_uid = request.headers.get('X-Firebase-UID')
         if not firebase_uid:
             print("!! Missing Firebase UID header")
-            return Response(
+            return JsonResponse(
                 {'error': 'Missing Firebase UID in headers'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -41,7 +46,7 @@ class FirebaseLoginAPI(APIView):
         email = request.data.get('email')
         if not email:
             print("!! Missing email in request data")
-            return Response(
+            return JsonResponse(
                 {'error': 'Email is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -56,14 +61,14 @@ class FirebaseLoginAPI(APIView):
         )
 
         if created:
-            return Response({
+            return JsonResponse({
                 'uid': user.firebase_uid,
                 'email': user.email,
                 'username': user.username,
                 'message': 'User created successfully'
             }, status=status.HTTP_201_CREATED)
         
-        return Response({
+        return JsonResponse({
             'uid': user.firebase_uid,
             'email': user.email,
             'username': user.username,
@@ -76,17 +81,10 @@ class DashboardAPI(APIView):
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        return Response({"message": "Dashboard API"}, status=status.HTTP_200_OK)
+        return JsonResponse({"message": "Dashboard API"}, status=status.HTTP_200_OK)
     
     
-# Add to core/api.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from .utils import generate_chapter_names  # Make sure to import the function
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+
 
 class ChapterAPI(APIView):
     authentication_classes = [FirebaseAuthentication]
@@ -100,12 +98,12 @@ class ChapterAPI(APIView):
             
             # Validate required fields
             if not topic:
-                return Response(
+                return JsonResponse(
                     {'error': 'Topic is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not grade:
-                return Response(
+                return JsonResponse(
                     {'error': 'Grade/level is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
@@ -114,7 +112,7 @@ class ChapterAPI(APIView):
             chapters = generate_chapter_names(topic, grade)
             
             # Return success response with chapters
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'message': 'Chapters generated successfully',
                 'data': {
@@ -126,7 +124,7 @@ class ChapterAPI(APIView):
             
         except Exception as e:
             # Return error response
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to generate chapters'
@@ -154,17 +152,17 @@ class VideoResourcesAPI(APIView):
             
             # Validate required fields
             if not topic:
-                return Response(
+                return JsonResponse(
                     {'error': 'Topic is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not grade:
-                return Response(
+                return JsonResponse(
                     {'error': 'Grade/level is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not chapter:
-                return Response(
+                return JsonResponse(
                     {'error': 'Chapter name is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
@@ -186,7 +184,7 @@ class VideoResourcesAPI(APIView):
             
         except Exception as e:
             # Return error response
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to fetch video resources'
@@ -209,17 +207,17 @@ class WebResourcesAPI(APIView):
             
             # Validate required fields
             if not topic:
-                return Response(
+                return JsonResponse(
                     {'error': 'Topic is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not grade:
-                return Response(
+                return JsonResponse(
                     {'error': 'Grade/level is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not chapter:
-                return Response(
+                return JsonResponse(
                     {'error': 'Chapter name is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
@@ -241,7 +239,7 @@ class WebResourcesAPI(APIView):
             
         except Exception as e:
             # Return error response
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to fetch web resources'
@@ -257,7 +255,7 @@ class PDFQAAPI(APIView):
     def post(self, request):
         pdf_file = request.FILES.get('pdf')
         if not pdf_file:
-            return Response(
+            return JsonResponse(
                 {'error': 'No PDF file provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -285,7 +283,7 @@ class PDFQAAPI(APIView):
                 vector_store=store_name
             )
             
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'message': 'PDF processed successfully',
                 'data': {
@@ -296,7 +294,7 @@ class PDFQAAPI(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to process PDF'
@@ -317,7 +315,7 @@ class QuestionAnswerAPI(APIView):
         
         if not pdf_id or not question:
             print("!! DEBUG: Missing pdf_id or question")
-            return Response(
+            return JsonResponse(
                 {'error': 'Both pdf_id and question are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -333,7 +331,7 @@ class QuestionAnswerAPI(APIView):
             
             if not os.path.exists(vs_path):
                 print("!! DEBUG: Vector store directory does not exist!")
-                return Response(
+                return JsonResponse(
                     {'error': 'Vector store not found. Please re-upload the PDF.'},
                     status=status.HTTP_404_NOT_FOUND
                 )
@@ -361,7 +359,7 @@ class QuestionAnswerAPI(APIView):
             
         except UserPDF.DoesNotExist:
             print("!! DEBUG: PDF not found or doesn't belong to user")
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': 'PDF not found',
                 'message': 'You do not have access to this PDF'
@@ -370,7 +368,7 @@ class QuestionAnswerAPI(APIView):
         except Exception as e:
             print(f"!! DEBUG: Unexpected error: {str(e)}")
             print(traceback.format_exc())  # This will print the full traceback
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'traceback': traceback.format_exc(),
@@ -389,7 +387,7 @@ class UserPDFListAPI(APIView):
             'upload_time': pdf.upload_time,
             'conversation_count': pdf.conversations.count()
         } for pdf in pdfs]
-        return Response({'status': True, 'data': data})
+        return JsonResponse({'status': True, 'data': data})
 
 class PDFConversationHistoryAPI(APIView):
     authentication_classes = [FirebaseAuthentication]
@@ -404,9 +402,9 @@ class PDFConversationHistoryAPI(APIView):
                 'answer': json.loads(conv.answer),
                 'created_at': conv.created_at
             } for conv in conversations]
-            return Response({'status': True, 'data': data})
+            return JsonResponse({'status': True, 'data': data})
         except UserPDF.DoesNotExist:
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': 'PDF not found'
             }, status=status.HTTP_404_NOT_FOUND)
@@ -443,21 +441,175 @@ class DeletePDFAPI(APIView):
             # Delete database record
             user_pdf.delete()
             
-            return Response({
+            return JsonResponse({
                 'status': True,
                 'message': 'PDF and all related data deleted successfully'
             })
             
         except UserPDF.DoesNotExist:
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': 'PDF not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to delete PDF'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
+
+
+class YouTubeVideoAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        video_url = request.data.get('video_url')
+        if not video_url:
+            return JsonResponse(
+                {'error': 'YouTube video URL is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            processor = YouTubeProcessor()
+            
+            # Process video
+            video_id = processor.extract_video_id(video_url)
+            store_name = f"yt_{request.user.firebase_uid}_{video_id}"
+            
+            # This handles transcript loading and vector store creation
+            processing_result = processor.process_video(video_url, store_name)
+            
+            # Save to database
+            user_video = UserYouTubeVideo.objects.create(
+                user=request.user,
+                video_url=video_url,
+                video_id=video_id,
+                video_title=processing_result['video_info'].get('title', ''),
+                thumbnail_url=processing_result['video_info'].get('thumbnail', ''),
+                vector_store=store_name
+            )
+            
+            return JsonResponse({
+                'status': True,
+                'message': 'YouTube video processed successfully',
+                'data': {
+                    'id': user_video.id,
+                    'video_title': user_video.video_title,
+                    'thumbnail_url': user_video.thumbnail_url,
+                    'upload_time': user_video.upload_time
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to process YouTube video'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class YouTubeQuestionAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        video_id = request.data.get('video_id')
+        question = request.data.get('question')
+        
+        if not video_id or not question:
+            return JsonResponse(
+                {'error': 'Both video_id and question are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Verify video belongs to user
+            user_video = UserYouTubeVideo.objects.get(id=video_id, user=request.user)
+            processor = YouTubeProcessor()
+            
+            # Load vector store
+            vs = processor.load_vector_store(user_video.vector_store)
+            
+            # Generate answer
+            answer = processor.answer_question(vs, question)
+            
+            # Save conversation
+            YouTubeConversation.objects.create(
+                video=user_video,
+                question=question,
+                answer=json.dumps(answer)
+            )
+            
+            return JsonResponse({
+                'status': True,
+                'data': answer
+            })
+            
+        except UserYouTubeVideo.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'Video not found or access denied'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to answer question'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class YouTubeVideoListAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        videos = UserYouTubeVideo.objects.filter(user=request.user).order_by('-upload_time')
+        data = [{
+            'id': video.id,
+            'video_title': video.video_title,
+            'thumbnail_url': video.thumbnail_url,
+            'upload_time': video.upload_time,
+            'conversation_count': video.conversations.count()
+        } for video in videos]
+        return JsonResponse({'status': True, 'data': data})
+
+class YouTubeVideoDeleteAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, video_id):
+        try:
+            user_video = UserYouTubeVideo.objects.get(id=video_id, user=request.user)
+            
+            # Delete vector store
+            vectorstore_path = os.path.join(
+                settings.BASE_DIR, 
+                "vectorstores", 
+                user_video.vector_store
+            )
+            if os.path.exists(vectorstore_path):
+                import shutil
+                shutil.rmtree(vectorstore_path)
+            
+            # Delete database record
+            user_video.delete()
+            
+            return JsonResponse({
+                'status': True,
+                'message': 'YouTube video and all related data deleted successfully'
+            })
+            
+        except UserYouTubeVideo.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'Video not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to delete video'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
