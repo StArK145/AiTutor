@@ -74,3 +74,28 @@ class PDFConversation(models.Model):
     
     def __str__(self):
         return f"Conversation about {self.pdf.file_name}"
+
+
+class UserYouTubeVideo(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='youtube_videos')
+    video_url = models.URLField()
+    video_id = models.CharField(max_length=20)  # Store YouTube video ID separately
+    video_title = models.CharField(max_length=255)
+    thumbnail_url = models.URLField()
+    vector_store = models.CharField(max_length=255)  # Store path to vector store
+    upload_time = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s Video: {self.video_title}"
+
+class YouTubeConversation(models.Model):
+    video = models.ForeignKey(UserYouTubeVideo, on_delete=models.CASCADE, related_name='conversations')
+    question = models.TextField()
+    answer = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Conversation about {self.video.video_title}"
