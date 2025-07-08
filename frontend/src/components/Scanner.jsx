@@ -1,8 +1,12 @@
 // Scanner.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { uploadPdf, analyzeYoutube } from "../utils/contentScan";
-import { Document, Page, pdfjs } from "react-pdf";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min?url";
+import { Viewer, Worker, SpecialZoomLevel } from "@react-pdf-viewer/core";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
+import { highlightPlugin } from "@react-pdf-viewer/highlight";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+
 import { askPdfQuestion } from "../utils/contentScan";
 import {
   Upload,
@@ -22,7 +26,7 @@ import {
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE;
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+
 /**
  * Endpoints (adjust to match your backend):
  *   POST `${API_BASE}/analyze/pdf`   – multipart/form‑data with key `file`
@@ -37,6 +41,7 @@ function Scanner() {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState(null); // Backend result
   const [error, setError] = useState("");
+  const viewerRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState("form");
   const [question, setQuestion] = useState("");
@@ -48,6 +53,7 @@ function Scanner() {
       }. What would you like to know about it?`,
     },
   ]); // "form" | "results"
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   const modeOptions = [
     {
@@ -65,6 +71,19 @@ function Scanner() {
       placeholder: "https://www.youtube.com/watch?v=...",
     },
   ];
+  const fileUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file]
+  );
+
+  useEffect(() => {
+    if (viewerRef.current) {
+      viewerRef.current.zoom(SpecialZoomLevel.ActualSize); // 100% zoom
+    }
+  }, [fileUrl]);
+  const highlightPluginInstance = highlightPlugin();
+  const { jumpToHighlightArea, highlightAreas, setHighlightAreas } =
+    highlightPluginInstance;
 
   /* ---------- handlers ---------- */
   const handleFileChange = (e) => {
@@ -144,28 +163,48 @@ function Scanner() {
 
   const handleSend = async () => {
     if (!question.trim()) return;
-    console.log("Sending question:", question);
-    
-    const pdfId = response?.data?.id;
 
+    const pdfId = response?.data?.id;
     const userMessage = { type: "user", text: question };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-    
 
     try {
-      console.log("Sending question to backend:", question);
-      console.log("Sending question to backend:", pdfId);
-      
       const res = await askPdfQuestion(pdfId, question);
-      console.log("Received response from backend:", res.data);
-      
+
+      const aiAnswer = res?.data?.answer || "No response from server.";
+      const refs = res?.data?.references || [];
+
       const aiMessage = {
         type: "ai",
-        text: res?.data?.answer || "No response from server.",
+        text: aiAnswer,
       };
-      setMessages((prev) => [...prev, aiMessage]);
+
+      const referenceMessage = {
+        type: "reference-list",
+        references: refs,
+      };
+
+      // Add both answer and clickable references
+      setMessages((prev) => [...prev, aiMessage, referenceMessage]);
+
+      // Highlight in PDF
+      const highlights = refs.map((ref) => ({
+        pageIndex: ref.page - 1,
+        highlightAreas: [
+          {
+            height: 0.01,
+            width: 1,
+            left: 0,
+            top: 0,
+            id: ref.chunk_id,
+          },
+        ],
+        content: ref.text,
+      }));
     } catch (err) {
+      console.log("Error asking question:", err);
+
       setMessages((prev) => [
         ...prev,
         { type: "ai", text: "⚠️ Error getting answer." },
@@ -329,7 +368,7 @@ function Scanner() {
 
       {/* ---------------- TAB 2 : RESULTS ---------------- */}
       {activeTab === "results" && (
-        <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border overflow-hidden">
+        <section className="w-auto h-auto bg-white dark:bg-slate-800 overflow-hidden">
           {/* Header with Back Button */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-4">
@@ -355,35 +394,66 @@ function Scanner() {
           </div>
 
           {/* Two-Panel Layout */}
-          <div className="flex h-[80vh]">
+          <div className="flex h-[80vh] min-h-0">
             {/* Left Panel - Chat Section */}
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full w-1/2 min-w-0">
               {/* Chat Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 <div className="space-y-3">
-                  {messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${
-                        msg.type === "user" ? "justify-end" : "justify-start"
-                      }`}
-                    >
+                  {messages.map((msg, index) => {
+                    if (msg.type === "reference-list") {
+                      return (
+                        <div
+                          key={index}
+                          className="text-sm text-slate-800 dark:text-slate-100"
+                        >
+                          <div className="mt-2 space-y-1">
+                            {msg.references.map((ref) => (
+                              <button
+                                key={ref.chunk_id}
+                                onClick={() =>
+                                  jumpToHighlightArea({
+                                    pageIndex: ref.page - 2,
+                                    highlightAreas: [{ id: ref.chunk_id }],
+                                  })
+                                }
+                                className="block text-blue-600 dark:text-blue-400 hover:underline text-left w-full break-words"
+                              >
+                                🔗 Page {ref.page}: {ref.preview.slice(0, 80)}
+                                ...
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Existing AI and user message rendering
+                    return (
                       <div
-                        className={`${
-                          msg.type === "user"
-                            ? "bg-green-100 dark:bg-green-700"
-                            : "bg-slate-100 dark:bg-slate-700"
-                        } rounded-lg p-3 max-w-[80%]`}
+                        key={index}
+                        className={`flex ${
+                          msg.type === "user" ? "justify-end" : "justify-start"
+                        }`}
                       >
-                        <p className="text-sm text-slate-900 dark:text-slate-100">
-                          {msg.text}
-                        </p>
+                        <div
+                          className={`${
+                            msg.type === "user"
+                              ? "bg-green-100 dark:bg-green-700"
+                              : "bg-slate-100 dark:bg-slate-700"
+                          } rounded-lg p-3 max-w-[80%] min-w-0`}
+                        >
+                          <p className="text-sm text-slate-900 dark:text-slate-100 break-words">
+                            {msg.text}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3 max-w-[80%]">
+                      <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3 max-w-[80%] min-w-0">
                         <p className="text-sm text-slate-900 dark:text-slate-100">
                           Thinking...
                         </p>
@@ -394,7 +464,7 @@ function Scanner() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
+              <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -402,12 +472,12 @@ function Scanner() {
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
                     placeholder="Ask a question about the content..."
-                    className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm"
+                    className="flex-1 min-w-0 p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm"
                   />
                   <button
                     onClick={handleSend}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition-colors"
+                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition-colors"
                   >
                     Send
                   </button>
@@ -416,96 +486,73 @@ function Scanner() {
             </div>
 
             {/* Right Panel - Content Display */}
-            <div className="w-1/2 flex flex-col">
+            <div className="w-1/2 flex flex-col min-w-0">
               {/* Content Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
-                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-                  {mode === "pdf" ? "PDF Viewer" : "Video Player"}
-                </h3>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  {mode === "pdf"
-                    ? "Original document content"
-                    : "YouTube video content"}
-                </p>
-              </div>
 
               {/* Content Display Area */}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden min-h-0">
                 {mode === "pdf" ? (
                   <div className="h-full bg-slate-100 dark:bg-slate-700 overflow-y-auto p-4">
                     {file ? (
-                      <Document
-                        file={file}
-                        onLoadError={(error) =>
-                          console.error("Error while loading PDF:", error)
-                        }
-                        className="space-y-4"
-                      >
-                        {Array.from(new Array(10), (el, index) => (
-                          <Page
-                            key={`page_${index + 1}`}
-                            pageNumber={index + 1}
+                      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                        <div className="h-full overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800">
+                          <Viewer
+                            ref={viewerRef}
+                            fileUrl={fileUrl}
+                            plugins={[
+                              defaultLayoutPluginInstance,
+                              highlightPluginInstance,
+                            ]}
+                            renderLoader={(percentages) => (
+                              <div className="flex items-center justify-center h-full">
+                                <div className="text-center">
+                                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mb-2"></div>
+                                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                                    Loading PDF... {Math.round(percentages)}%
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            theme={{
+                              theme: "auto", // This will auto-detect based on your page theme
+                            }}
                           />
-                        ))}
-                      </Document>
+                        </div>
+                      </Worker>
                     ) : (
-                      <div className="text-center text-slate-500 dark:text-slate-400">
-                        PDF not loaded
+                      <div className="text-center text-slate-500 dark:text-slate-400 h-full flex items-center justify-center">
+                        <div>
+                          <svg
+                            className="w-12 h-12 mx-auto mb-2 text-slate-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <p>PDF not loaded</p>
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="h-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                    <div className="text-center">
+                    <div className="text-center p-4">
                       <LinkIcon className="w-12 h-12 text-slate-400 mx-auto mb-2" />
                       <p className="text-slate-600 dark:text-slate-400">
                         Video Player
                       </p>
-                      <p className="text-slate-500 dark:text-slate-500 text-sm mt-1">
+                      <p className="text-slate-500 dark:text-slate-500 text-sm mt-1 break-all">
                         {url}
                       </p>
                       {/* You can embed YouTube player here */}
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Analysis Summary Panel */}
-              <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 max-h-48 overflow-y-auto">
-                <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
-                  Analysis Summary
-                </h4>
-                {response && response.data ? (
-                  <div className="space-y-2">
-                    <div className="text-xs text-slate-600 dark:text-slate-400">
-                      <span
-                        className={
-                          response.ok ? "text-green-600" : "text-red-600"
-                        }
-                      >
-                        {response.ok
-                          ? "✅ Analysis completed"
-                          : "❌ Analysis failed"}
-                      </span>
-                    </div>
-                    {response.data.summary && (
-                      <p className="text-xs text-slate-700 dark:text-slate-300">
-                        {response.data.summary}
-                      </p>
-                    )}
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
-                        View raw data
-                      </summary>
-                      <pre className="mt-2 text-xs bg-slate-200 dark:bg-slate-800 p-2 rounded overflow-x-auto">
-                        {prettyJson(response)}
-                      </pre>
-                    </details>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-500 dark:text-slate-500">
-                    No analysis data available
-                  </p>
                 )}
               </div>
             </div>
