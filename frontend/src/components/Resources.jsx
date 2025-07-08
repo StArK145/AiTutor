@@ -3,6 +3,7 @@ import axios from "axios";
 import { getCsrfToken } from "../utils/api"; // Adjust the import path
 import { BookOpen, Sparkles, GraduationCap, AlertCircle, Play, ExternalLink, Loader2 } from "lucide-react";
 import ResultsView from "./ResultsView"; // Adjust the import path
+import {getFirebaseIdToken} from "../utils/firebase"; // Adjust the import path
 
 
 function Resources() {
@@ -39,6 +40,7 @@ function Resources() {
       setChapters([]);
       return;
     }
+    const idToken = await getFirebaseIdToken();
 
     setLoading(true);
     try {
@@ -50,6 +52,7 @@ function Resources() {
           headers: {
             "X-CSRFToken": csrfToken,
             "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`, // Include Firebase ID token if needed
           },
         }
       );
@@ -74,6 +77,7 @@ function Resources() {
 
     try {
       setError("");
+      const idToken = await getFirebaseIdToken();
 
       const res = await axios.post(
         `${API_BASE}/videos/`,
@@ -83,6 +87,7 @@ function Resources() {
           headers: {
             "X-CSRFToken": csrfToken,
             "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`, // Include Firebase ID token if needed
           },
         }
       );
@@ -98,7 +103,7 @@ function Resources() {
 
   const fetchWebResources = async ({ topic, grade, chapter }) => {
     const csrfToken = await getCsrfToken();
-
+    const idToken = await getFirebaseIdToken();
     const res = await axios.post(
       `${API_BASE}/websites/`,
       { topic, grade, chapter },
@@ -107,6 +112,7 @@ function Resources() {
         headers: {
           "X-CSRFToken": csrfToken,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`, // Include Firebase ID token if needed
         },
       }
     );

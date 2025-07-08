@@ -15,7 +15,7 @@ import {
 
 // 👉 slot in your real screens here
 import Resources from "../components/Resources"; // Adjust the import path
-import ResourcesHistory from "../components/ResourcesHistory"; // Adjust the import path
+import HistoryPage from "../components/HistoryPage"; // Adjust the import path
 import Scanner from "../components/Scanner"; // Adjust the import path
 
 const TAB_CONFIG = [
@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   const CurrentScreen = {
     resources: Resources,
-    history: ResourcesHistory,
+    history: History,
     scanner: Scanner,
   }[activeTab];
 
@@ -43,7 +43,7 @@ export default function Dashboard() {
   const getTabDescription = (tabId) => {
     const descriptions = {
       resources: "Manage and view your resource collection",
-      history: "Track your resource access history",
+      hisory: "Track your resource access history",
       scanner: "Scan and identify new resources"
     };
     return descriptions[tabId] || "Navigate through your dashboard";
