@@ -248,11 +248,11 @@ Expanded Version:""",
         return self.call_groq_llm(prompt, language)
 
     def answer_question(self, vectorstore: FAISS, question: str) -> Dict:
-        """Answer question using vector store context"""
-        # Detect language of the question
+        """Answer question using vector store context. Always returns answer in English."""
+        # Detect language of the question (but we'll always answer in English)
         question_lang = 'hi' if any('\u0900' <= char <= '\u097F' for char in question) else 'en'
         
-        # Step 1: Expand the query
+        # Step 1: Expand the query (can be in original language)
         expanded_query = self.expand_query_with_llm(question, question_lang)
         
         # Step 2: Semantic search on expanded query
@@ -263,25 +263,20 @@ Expanded Version:""",
         )
 
         if not similar_docs:
-            no_answer = {
-                'en': "No relevant context found in the video.",
-                'hi': "वीडियो में कोई प्रासंगिक संदर्भ नहीं मिला।"
-            }
             return {
-                "answer": no_answer.get(question_lang, 'en'),
+                "answer": "No relevant context found in the video.",
                 "references": [],
                 "thinking_process": ""
             }
 
-        # Prepare context for LLM
+        # Prepare context for LLM (can be in any language)
         full_context = "\n\n".join([doc.page_content for doc in similar_docs])
         context_lang = similar_docs[0].metadata.get('language', 'en')
 
-        # Generate answer with thinking process
-        prompt_templates = {
-            'en': """Analyze the question and provide:
+        # Generate answer - always in English regardless of context language
+        prompt_template = """Analyze the question and provide:
 1. Your thinking process (marked with <thinking> tags)
-2. A detailed answer based strictly on the context
+2. A detailed answer in English based strictly on the context
 3. Key points from each relevant chunk
 4. Include timestamps where this information appears in the video
 
@@ -290,31 +285,19 @@ Question: {question}
 Context:
 {context}
 
+IMPORTANT: Your answer must be in English, even if the context is in another language.
+
 Format your response as:
 <thinking>Your analytical process here</thinking>
-<answer>Your structured answer here</answer>""",
-            'hi': """प्रश्न का विश्लेषण करें और प्रदान करें:
-1. आपकी सोच प्रक्रिया (<thinking> टैग के साथ चिह्नित)
-2. संदर्भ के आधार पर एक विस्तृत उत्तर
-3. प्रत्येक प्रासंगिक खंड से मुख्य बिंदु
-4. वीडियो में टाइमस्टैम्प शामिल करें जहां यह जानकारी दिखाई देती है
-
-प्रश्न: {question}
-
-संदर्भ:
-{context}
-
-अपनी प्रतिक्रिया को इस प्रकार प्रारूपित करें:
-<thinking>आपकी विश्लेषणात्मक प्रक्रिया यहाँ</thinking>
-<answer>आपका संरचित उत्तर यहाँ</answer>"""
-        }
+<answer>Your structured answer in English here</answer>"""
         
-        prompt = prompt_templates.get(context_lang, 'en').format(
+        prompt = prompt_template.format(
             question=question,
             context=full_context
         )
         
-        llm_response = self.call_groq_llm(prompt, context_lang)
+        # Force English response by setting language to 'en'
+        llm_response = self.call_groq_llm(prompt, 'en')
         
         # Extract thinking and answer parts
         thinking_process = ""
@@ -323,10 +306,7 @@ Format your response as:
             thinking_process = llm_response.split("<thinking>")[1].split("</thinking>")[0].strip()
             answer = llm_response.split("<answer>")[1].split("</answer>")[0].strip()
         except:
-            thinking_process = {
-                'en': "The model did not provide a separate thinking process.",
-                'hi': "मॉडल ने एक अलग सोच प्रक्रिया प्रदान नहीं की।"
-            }.get(context_lang, 'en')
+            thinking_process = "The model did not provide a separate thinking process."
             answer = llm_response
 
         return {
@@ -347,8 +327,8 @@ Format your response as:
                 } for doc in similar_docs
             ],
             "context_hash": self.generate_text_hash(full_context),
-            "language": context_lang
-        }
+            "language": "en"  # Always return English as the response language
+    }
 
     def process_video(self, video_url: str, store_name: str) -> Dict:
         """Full processing pipeline for a YouTube video"""
