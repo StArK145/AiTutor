@@ -15,14 +15,13 @@ import {
 
 // 👉 slot in your real screens here
 import Resources from "../components/Resources"; // Adjust the import path
-import HistoryPage from "../components/HistoryPage"; // Adjust the import path
 import Scanner from "../components/Scanner"; // Adjust the import path
 
 const TAB_CONFIG = [
   { id: "resources", label: "Resources", icon: LayoutDashboard },
-  { id: "history", label: "Resources History", icon: History },
   { id: "scanner", label: "Scanner", icon: ScanBarcode },
 ];
+
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -30,10 +29,10 @@ export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const CurrentScreen = {
-    resources: Resources,
-    history: History,
-    scanner: Scanner,
-  }[activeTab];
+  resources: Resources,
+  scanner: Scanner,
+}[activeTab];
+
 
   const getTabTitle = (tabId) => {
     const tab = TAB_CONFIG.find(t => t.id === tabId);
@@ -41,13 +40,13 @@ export default function Dashboard() {
   };
 
   const getTabDescription = (tabId) => {
-    const descriptions = {
-      resources: "Manage and view your resource collection",
-      hisory: "Track your resource access history",
-      scanner: "Scan and identify new resources"
-    };
-    return descriptions[tabId] || "Navigate through your dashboard";
+  const descriptions = {
+    resources: "Manage and view your resource collection",
+    scanner: "Scan and identify new resources"
   };
+  return descriptions[tabId] || "Navigate through your dashboard";
+};
+
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">

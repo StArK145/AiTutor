@@ -4,6 +4,7 @@ import { getCsrfToken } from "../utils/api"; // Adjust the import path
 import { BookOpen, Sparkles, GraduationCap, AlertCircle, Play, ExternalLink, Loader2 } from "lucide-react";
 import ResultsView from "./ResultsView"; // Adjust the import path
 import {getFirebaseIdToken} from "../utils/firebase"; // Adjust the import path
+import Model1history from "./Model1history";
 
 
 function Resources() {
@@ -13,7 +14,6 @@ function Resources() {
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [csrfToken, setCsrfToken] = useState(null);
   const [videos, setVideos] = useState([]);
   const [websites, setWebsites] = useState([]);
    const [activeTab, setActiveTab] = useState("form"); 
@@ -27,12 +27,7 @@ function Resources() {
 
   const API_BASE = import.meta.env.VITE_API_BASE;
 
-  useEffect(() => {
-    (async () => {
-      const token = await getCsrfToken();
-      if (token) setCsrfToken(token);
-    })();
-  }, []);
+  
 
   const generateChapters = async () => {
     if (!topic.trim() || !grade.trim()) {
@@ -41,6 +36,7 @@ function Resources() {
       return;
     }
     const idToken = await getFirebaseIdToken();
+    const csrfToken = await getCsrfToken();
 
     setLoading(true);
     try {
@@ -78,6 +74,7 @@ function Resources() {
     try {
       setError("");
       const idToken = await getFirebaseIdToken();
+      const csrfToken = await getCsrfToken();
 
       const res = await axios.post(
         `${API_BASE}/videos/`,
@@ -126,6 +123,8 @@ function Resources() {
     if (!topic?.trim()) return setError("Topic cannot be blank");
     if (!grade?.trim()) return setError("Grade cannot be blank");
     if (!chapter) return setError("Chapter cannot be blank");
+    setVideos([]);
+    setWebsites([]);
 
     try {
       setError("");
@@ -248,6 +247,7 @@ function Resources() {
               </span>
             )}
           </button>
+          <Model1history />
         </section>
       )}
 

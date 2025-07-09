@@ -18,8 +18,9 @@ import traceback
 from django.contrib.auth import get_user_model
 from .utils import generate_chapter_names  # Ensure this utility function is defined in utils.py
 from .yt_processor import YouTubeProcessor
-from .models import UserYouTubeVideo, YouTubeConversation
+from .models import UserYouTubeVideo, YouTubeConversation,ChapterResource
 from .yt_processor import YouTubeProcessor
+
 
 
 User = get_user_model()

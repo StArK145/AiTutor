@@ -191,3 +191,20 @@ export async function deleteYoutubeVideo(videoId) {
   if (!json.status) throw new Error(json.error || "Failed to delete video");
   return json;
 }
+
+
+export async function fetchChapterGenerationHistory() {
+  const idToken = await getFirebaseIdToken();
+  const csrfToken = await getCsrfToken(); // if CSRF is enabled
+
+  const res = await axios.get(`${API_BASE}/chapters/history/`, {
+    withCredentials: true,
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrfToken, // include if your Django setup requires it
+    },
+  });
+
+  return res.data.data;
+}
