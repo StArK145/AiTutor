@@ -53,6 +53,33 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = "User"
         verbose_name_plural = "Users"
 
+# core/models.py
+
+class ChapterGeneration(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_generations')
+    topic = models.CharField(max_length=255)
+    grade = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ChapterResource(models.Model):
+    generation = models.ForeignKey(ChapterGeneration, on_delete=models.CASCADE, related_name='chapters')
+    name = models.CharField(max_length=255)
+    position = models.IntegerField()  # To maintain original order
+
+class ChapterVideoResource(models.Model):
+    chapter = models.ForeignKey(ChapterResource, on_delete=models.CASCADE, related_name='videos')
+    title = models.TextField()
+    url = models.URLField()
+    channel = models.CharField(max_length=255)
+    duration = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ChapterWebResource(models.Model):
+    chapter = models.ForeignKey(ChapterResource, on_delete=models.CASCADE, related_name='websites')
+    title = models.TextField()
+    url = models.URLField()
+    source = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class UserPDF(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pdfs')

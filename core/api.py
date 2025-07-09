@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from .pdf_processor import PDFProcessor
 import os
 from django.conf import settings
-from .models import UserPDF, PDFConversation
+from .models import UserPDF, PDFConversation, ChapterGeneration
 import json
 from .firebase_auth import FirebaseAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -92,49 +92,96 @@ class ChapterAPI(APIView):
 
     def post(self, request):
         try:
-            # Get topic and grade from request data
             topic = request.data.get('topic')
             grade = request.data.get('grade')
             
-            # Validate required fields
-            if not topic:
-                return JsonResponse(
-                    {'error': 'Topic is required', 'status': False},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if not grade:
-                return JsonResponse(
-                    {'error': 'Grade/level is required', 'status': False},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Validate inputs
+            if not topic or not grade:
+                return JsonResponse({'error': 'Topic and grade are required'}, status=400)
             
             # Generate chapters
             chapters = generate_chapter_names(topic, grade)
             
-            # Return success response with chapters
+            # Save generation record
+            generation = ChapterGeneration.objects.create(
+                user=request.user,
+                topic=topic,
+                grade=grade
+            )
+            
+            # Save chapters without resources
+            for i, chapter_name in enumerate(chapters):
+                ChapterResource.objects.create(
+                    generation=generation,
+                    name=chapter_name,
+                    position=i
+                )
+            
             return JsonResponse({
                 'status': True,
-                'message': 'Chapters generated successfully',
                 'data': {
+                    'generation_id': generation.id,
                     'topic': topic,
                     'grade': grade,
                     'chapters': chapters
                 }
-            }, status=status.HTTP_200_OK)
+            })
             
         except Exception as e:
-            # Return error response
-            return JsonResponse({
-                'status': False,
-                'error': str(e),
-                'message': 'Failed to generate chapters'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({'error': str(e)}, status=500)
         
 @api_view(['GET'])
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
+# core/api.py
 
+class ChapterGenerationHistoryAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        generations = ChapterGeneration.objects.filter(user=request.user).order_by('-created_at')
+        data = [{
+            'id': gen.id,
+            'topic': gen.topic,
+            'grade': gen.grade,
+            'created_at': gen.created_at,
+            'chapter_count': gen.chapters.count()
+        } for gen in generations]
+        return JsonResponse({'data': data})
+
+class ChapterResourcesAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, generation_id):
+        try:
+            generation = ChapterGeneration.objects.get(id=generation_id, user=request.user)
+            chapters = generation.chapters.all().order_by('position')
+            
+            data = []
+            for chapter in chapters:
+                chapter_data = {
+                    'id': chapter.id,
+                    'name': chapter.name,
+                    'videos': [{
+                        'title': v.title,
+                        'url': v.url,
+                        'channel': v.channel,
+                        'duration': v.duration
+                    } for v in chapter.videos.all()],
+                    'websites': [{
+                        'title': w.title,
+                        'url': w.url,
+                        'source': w.source
+                    } for w in chapter.websites.all()]
+                }
+                data.append(chapter_data)
+            
+            return JsonResponse({'data': data})
+        except ChapterGeneration.DoesNotExist:
+            return JsonResponse({'error': 'Not found'}, status=404)
 
 
 from .utils import get_video_resources
