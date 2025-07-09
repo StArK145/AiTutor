@@ -17,10 +17,11 @@ urlpatterns = [
     path('api/user/pdfs/', UserPDFListAPI.as_view(), name='api_user_pdfs'),
     path('api/user/pdfs/<int:pdf_id>/', DeletePDFAPI.as_view(), name='api_delete_pdf'),
     path('api/user/pdfs/<int:pdf_id>/conversations/', PDFConversationHistoryAPI.as_view(), name='api_pdf_conversations'),
-    path('', TemplateView.as_view(template_name='index.html')),
-    path('<path:path>', TemplateView.as_view(template_name='index.html')),
     path('api/process-youtube/', YouTubeVideoAPI.as_view(), name='api_process_youtube'),
     path('api/ask-youtube-question/', YouTubeQuestionAPI.as_view(), name='api_ask_youtube_question'),
     path('api/user/youtube-videos/', YouTubeVideoListAPI.as_view(), name='api_user_youtube_videos'),
     path('api/user/youtube-videos/<int:video_id>/', YouTubeVideoDeleteAPI.as_view(), name='api_delete_youtube_video'),
+    path('', TemplateView.as_view(template_name='index.html')),
+    path('<path:path>', TemplateView.as_view(template_name='index.html')),
+
 ]

@@ -34,7 +34,7 @@ export async function analyzeYoutube(url) {
   const idToken = await getFirebaseIdToken(); // drop if not needed
   const res = await axios.post(
     `${API_BASE}/process-youtube/`,
-    { url },
+    { video_url: url },
     {
       headers: {
       "Content-Type": "application/json",

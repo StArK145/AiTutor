@@ -9,7 +9,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 import google.generativeai as genai
 import requests
 
