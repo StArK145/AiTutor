@@ -3,7 +3,7 @@ import re
 import json
 import hashlib
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from yt_dlp import YoutubeDL
 from youtube_transcript_api import YouTubeTranscriptApi
 from langchain.schema import Document
@@ -22,6 +22,7 @@ class YouTubeProcessor:
         self.groq_model = "deepseek-r1-distill-llama-70b"
         genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
         self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        self.supported_languages = ['en', 'hi']  # English and Hindi (English first)
 
     @staticmethod
     def clean_text(text: str) -> str:
@@ -75,7 +76,28 @@ class YouTubeProcessor:
         video_id = YouTubeProcessor.extract_video_id(video_url)
         return f"https://www.youtube.com/watch?v={video_id}&t={int(timestamp)}s"
 
-    def load_youtube_transcript(self, video_url: str, languages: List[str] = ['en']) -> List[Document]:
+    def get_transcript(self, video_id: str) -> Union[List[Dict], None]:
+        """Get transcript with preference for English, then Hindi, then None"""
+        # First try to get English transcript
+        try:
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            print("Found English transcript")
+            return transcript, 'en'
+        except Exception as e:
+            print(f"Couldn't find English transcript: {str(e)}")
+        
+        # If English not available, try Hindi
+        try:
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
+            print("Found Hindi transcript (English not available)")
+            return transcript, 'hi'
+        except Exception as e:
+            print(f"Couldn't find Hindi transcript: {str(e)}")
+        
+        # If neither is available, return None
+        return None, None
+
+    def load_youtube_transcript(self, video_url: str) -> List[Document]:
         """Load and process YouTube transcript into chunks with timestamps"""
         video_id = self.extract_video_id(video_url)
         print(f"\nProcessing YouTube video: {video_url}")
@@ -85,18 +107,10 @@ class YouTubeProcessor:
         if video_info.get('title'):
             print(f"Video Title: {video_info['title']}")
         
-        # Try to get transcript in each language until successful
-        transcript = None
-        for lang in languages:
-            try:
-                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang])
-                print(f"Found transcript in language: {lang}")
-                break
-            except:
-                continue
-        
+        # Get transcript with language preference
+        transcript, transcript_lang = self.get_transcript(video_id)
         if not transcript:
-            raise Exception("No transcript available for the video in the specified languages")
+            raise Exception(f"No transcript available in supported languages: {self.supported_languages}")
         
         # Process transcript into chunks with metadata
         full_text = " ".join([entry['text'] for entry in transcript])
@@ -139,7 +153,8 @@ class YouTubeProcessor:
                     "text_hash": self.generate_text_hash(chunk_text),
                     "video_hash": self.generate_text_hash(full_text),
                     "video_title": video_info.get('title', 'Unknown'),
-                    "video_id": video_id
+                    "video_id": video_id,
+                    "language": transcript_lang  # Add language metadata
                 }
             ))
         
@@ -167,18 +182,24 @@ class YouTubeProcessor:
             allow_dangerous_deserialization=True
         )
 
-    def call_groq_llm(self, prompt: str) -> str:
+    def call_groq_llm(self, prompt: str, language: str = 'en') -> str:
         """Call Groq LLM API with the given prompt"""
         headers = {
             "Authorization": f"Bearer {self.groq_api_key}",
             "Content-Type": "application/json"
         }
+        
+        system_message = {
+            "en": "You are a helpful AI assistant. Answer questions using the provided context.",
+            "hi": "आप एक सहायक AI सहायक हैं। प्रदान किए गए संदर्भ का उपयोग करके प्रश्नों का उत्तर दें।"
+        }.get(language, "en")
+        
         payload = {
             "model": self.groq_model,
             "messages": [
                 {
                     "role": "system", 
-                    "content": "You are a helpful AI assistant. Answer questions using the provided context."
+                    "content": system_message
                 },
                 {"role": "user", "content": prompt}
             ]
@@ -194,20 +215,33 @@ class YouTubeProcessor:
         
         return response.json()["choices"][0]["message"]["content"]
 
-    def expand_query_with_llm(self, query: str) -> str:
+    def expand_query_with_llm(self, query: str, language: str = 'en') -> str:
         """Expand short queries for better semantic search"""
-        prompt = f"""You are an expert assistant. The user query below is too short for accurate search.
+        prompt_templates = {
+            'en': """You are an expert assistant. The user query below is too short for accurate search.
 Please expand it into a more detailed version while preserving the original intent.
 
 Original Query: {query}
 
-Expanded Version:"""
-        return self.call_groq_llm(prompt)
+Expanded Version:""",
+            'hi': """आप एक विशेषज्ञ सहायक हैं। नीचे दिया गया उपयोगकर्ता प्रश्न सटीक खोज के लिए बहुत छोटा है।
+कृपया इसे मूल इरादे को संरक्षित करते हुए अधिक विस्तृत संस्करण में विस्तारित करें।
+
+मूल प्रश्न: {query}
+
+विस्तारित संस्करण:"""
+        }
+        
+        prompt = prompt_templates.get(language, 'en').format(query=query)
+        return self.call_groq_llm(prompt, language)
 
     def answer_question(self, vectorstore: FAISS, question: str) -> Dict:
         """Answer question using vector store context"""
+        # Detect language of the question
+        question_lang = 'hi' if any('\u0900' <= char <= '\u097F' for char in question) else 'en'
+        
         # Step 1: Expand the query
-        expanded_query = self.expand_query_with_llm(question)
+        expanded_query = self.expand_query_with_llm(question, question_lang)
         
         # Step 2: Semantic search on expanded query
         similar_docs = vectorstore.max_marginal_relevance_search(
@@ -217,17 +251,23 @@ Expanded Version:"""
         )
 
         if not similar_docs:
+            no_answer = {
+                'en': "No relevant context found in the video.",
+                'hi': "वीडियो में कोई प्रासंगिक संदर्भ नहीं मिला।"
+            }
             return {
-                "answer": "No relevant context found in the video.",
+                "answer": no_answer.get(question_lang, 'en'),
                 "references": [],
                 "thinking_process": ""
             }
 
         # Prepare context for LLM
         full_context = "\n\n".join([doc.page_content for doc in similar_docs])
+        context_lang = similar_docs[0].metadata.get('language', 'en')
 
         # Generate answer with thinking process
-        prompt = f"""Analyze the question and provide:
+        prompt_templates = {
+            'en': """Analyze the question and provide:
 1. Your thinking process (marked with <thinking> tags)
 2. A detailed answer based strictly on the context
 3. Key points from each relevant chunk
@@ -236,13 +276,33 @@ Expanded Version:"""
 Question: {question}
 
 Context:
-{full_context}
+{context}
 
 Format your response as:
 <thinking>Your analytical process here</thinking>
-<answer>Your structured answer here</answer>"""
+<answer>Your structured answer here</answer>""",
+            'hi': """प्रश्न का विश्लेषण करें और प्रदान करें:
+1. आपकी सोच प्रक्रिया (<thinking> टैग के साथ चिह्नित)
+2. संदर्भ के आधार पर एक विस्तृत उत्तर
+3. प्रत्येक प्रासंगिक खंड से मुख्य बिंदु
+4. वीडियो में टाइमस्टैम्प शामिल करें जहां यह जानकारी दिखाई देती है
+
+प्रश्न: {question}
+
+संदर्भ:
+{context}
+
+अपनी प्रतिक्रिया को इस प्रकार प्रारूपित करें:
+<thinking>आपकी विश्लेषणात्मक प्रक्रिया यहाँ</thinking>
+<answer>आपका संरचित उत्तर यहाँ</answer>"""
+        }
         
-        llm_response = self.call_groq_llm(prompt)
+        prompt = prompt_templates.get(context_lang, 'en').format(
+            question=question,
+            context=full_context
+        )
+        
+        llm_response = self.call_groq_llm(prompt, context_lang)
         
         # Extract thinking and answer parts
         thinking_process = ""
@@ -251,7 +311,10 @@ Format your response as:
             thinking_process = llm_response.split("<thinking>")[1].split("</thinking>")[0].strip()
             answer = llm_response.split("<answer>")[1].split("</answer>")[0].strip()
         except:
-            thinking_process = "The model did not provide a separate thinking process."
+            thinking_process = {
+                'en': "The model did not provide a separate thinking process.",
+                'hi': "मॉडल ने एक अलग सोच प्रक्रिया प्रदान नहीं की।"
+            }.get(context_lang, 'en')
             answer = llm_response
 
         return {
@@ -267,10 +330,12 @@ Format your response as:
                     "timestamp": doc.metadata["timestamp"],
                     "text": doc.page_content,
                     "preview": doc.metadata["preview"],
-                    "video_title": doc.metadata.get("video_title", "Unknown")
+                    "video_title": doc.metadata.get("video_title", "Unknown"),
+                    "language": doc.metadata.get("language", "en")
                 } for doc in similar_docs
             ],
-            "context_hash": self.generate_text_hash(full_context)
+            "context_hash": self.generate_text_hash(full_context),
+            "language": context_lang
         }
 
     def process_video(self, video_url: str, store_name: str) -> Dict:
@@ -285,25 +350,3 @@ Format your response as:
             "chunks": chunks,
             "store_name": store_name
         }
-
-
-# Example usage
-# if __name__ == "__main__":
-#     processor = YouTubeProcessor()
-    
-#     # Example video processing
-#     video_url = "https://www.youtube.com/watch?v=vJOGC8QJZJQ"
-#     store_name = "example_youtube_video"
-    
-#     # Process the video
-#     result = processor.process_video(video_url, store_name)
-#     print(f"Processed video: {result['video_info']['title']}")
-    
-#     # Ask a question
-#     question = "What is the main theme of this video?"
-#     answer = processor.answer_question(result['vectorstore'], question)
-#     print("\nAnswer:")
-#     print(answer['answer'])
-#     print("\nReferences:")
-#     for ref in answer['references']:
-#         print(f"- {ref['video_title']} @ {ref['timestamp']['start']}s: {ref['preview']}")
