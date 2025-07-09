@@ -31,11 +31,16 @@ export async function analyzeYoutube(url) {
   if (!url) throw new Error("No YouTube URL provided");
 
   const csrf = await getCsrfToken();       // drop if not needed
+  const idToken = await getFirebaseIdToken(); // drop if not needed
   const res = await axios.post(
-    `${API_BASE}/analyze/yt`,
+    `${API_BASE}/process-youtube/`,
     { url },
     {
-      headers: { "X-CSRFToken": csrf },    // drop if not needed
+      headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrf,  
+      Authorization: `Bearer ${idToken}`,               // drop if not needed
+    },    // drop if not needed
       withCredentials: true,
     }
   );

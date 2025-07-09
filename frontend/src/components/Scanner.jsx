@@ -7,7 +7,6 @@ import { highlightPlugin } from "@react-pdf-viewer/highlight";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
-
 import { askPdfQuestion } from "../utils/contentScan";
 import {
   Upload,
@@ -116,20 +115,22 @@ function Scanner() {
     setResponse(null);
 
     try {
-      if (mode === "pdf" && !file) {
-        return setError("Please choose a PDF file to analyze.");
-      } else {
+      if (mode === "pdf") {
+        if (!file) return setError("Please choose a PDF file to analyze.");
         let data = await uploadPdf(file);
         setIsLoading(true);
         setResponse(data);
         setActiveTab("results");
         return;
       }
-      if (mode === "yt" && !url.trim()) {
-        return setError("Please paste a YouTube link to analyze.");
-      } else {
+
+      if (mode === "yt") {
+        if (!url.trim())
+          return setError("Please paste a YouTube link to analyze.");
         let data = await analyzeYoutube(url);
         setIsLoading(true);
+        console.log("YouTube analysis response:", data);
+        
         setResponse(data);
         setActiveTab("results");
         return;
@@ -162,7 +163,6 @@ function Scanner() {
   const prettyJson = (json) => JSON.stringify(json, null, 2);
 
   /* ---------- render ---------- */
-
 
   return (
     <div className="space-y-6">
@@ -318,15 +318,16 @@ function Scanner() {
       {/* ---------------- TAB 2 : RESULTS ---------------- */}
       {activeTab === "results" && (
         <Model2results
-        file={file}
-    url={url}
-    mode={mode}
-    isLoading={isLoading}
-    setIsLoading={setIsLoading}
-    onNewScan={handleNewScan}
-    viewerRef={viewerRef}
-    fileUrl={fileUrl}
-    response = {response} />
+          file={file}
+          url={url}
+          mode={mode}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          onNewScan={handleNewScan}
+          viewerRef={viewerRef}
+          fileUrl={fileUrl}
+          response={response}
+        />
       )}
     </div>
   );
