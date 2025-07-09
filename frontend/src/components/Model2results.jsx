@@ -5,6 +5,9 @@ import {
   Link as LinkIcon,
   FileText,
 } from "lucide-react";
+
+import YouTube from "react-youtube";
+import ReactMarkdown from "react-markdown";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
@@ -12,7 +15,7 @@ import { highlightPlugin } from "@react-pdf-viewer/highlight";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
 import { useState, useMemo } from "react";
-import { askPdfQuestion } from "../utils/contentScan"; // Adjust the import path as needed
+import { askPdfQuestion, askYoutubeQuestion } from "../utils/contentScan"; // Adjust the import path as needed
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 function Model2results({
@@ -30,8 +33,11 @@ function Model2results({
   const highlightPluginInstance = highlightPlugin();
 
   const { jumpToHighlightArea } = highlightPluginInstance;
+  const [player, setPlayer] = useState(null);
 
   const [question, setQuestion] = useState("");
+  const [videoStartTime, setVideoStartTime] = useState(0);
+
   const [messages, setMessages] = useState([
     {
       type: "ai",
@@ -40,35 +46,36 @@ function Model2results({
       }. What would you like to know about it?`,
     },
   ]);
+  console.log(response);
 
   const handleSend = async () => {
     if (!question.trim()) return;
 
-    const pdfId = response?.data?.id;
     const userMessage = { type: "user", text: question };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
-      const res = await askPdfQuestion(pdfId, question);
+      let res;
+      if (mode === "pdf") {
+        const pdfId = response?.data?.id;
+        res = await askPdfQuestion(pdfId, question);
+      } else if (mode === "yt") {
+        const videoId = response?.data?.id;
+        res = await askYoutubeQuestion(videoId, question);
+        console.log("Response from YouTube question:", res);
+      }
 
       const aiAnswer = res?.data?.answer || "No response from server.";
       const refs = res?.data?.references || [];
 
-      const aiMessage = {
-        type: "ai",
-        text: aiAnswer,
-      };
-
-      const referenceMessage = {
-        type: "reference-list",
-        references: refs,
-      };
-
-      // Add both answer and clickable references
-      setMessages((prev) => [...prev, aiMessage, referenceMessage]);
-
-      // Highlight in PDF
+      setMessages((prev) => [
+        ...prev,
+        { type: "ai", text: aiAnswer },
+        ...(refs.length > 0
+          ? [{ type: "reference-list", references: refs }]
+          : []),
+      ]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -77,6 +84,35 @@ function Model2results({
     } finally {
       setIsLoading(false);
       setQuestion("");
+    }
+  };
+  // Function to extract YouTube video ID from URL
+  function getYoutubeVideoId(url) {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname === "youtu.be") {
+        return urlObj.pathname.slice(1);
+      } else if (urlObj.hostname.includes("youtube.com")) {
+        return urlObj.searchParams.get("v");
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+  // Converts timestamp string like "01:30" or "00:01:30" to seconds
+  function timeToSeconds(timeStr) {
+    const parts = timeStr.split(":").map(Number).reverse();
+    return parts.reduce(
+      (total, part, index) => total + part * Math.pow(60, index),
+      0
+    );
+  }
+
+  const handleSeek = (timeInSeconds) => {
+    if (player) {
+      player.seekTo(timeInSeconds, true);
+      player.playVideo();
     }
   };
 
@@ -124,15 +160,33 @@ function Model2results({
                         {msg.references.map((ref) => (
                           <button
                             key={ref.chunk_id}
-                            onClick={() =>
-                              jumpToHighlightArea({
-                                pageIndex: ref.page - 2,
-                              })
-                            }
+                            onClick={() => {
+                              if (mode === "pdf") {
+                                jumpToHighlightArea({
+                                  pageIndex: ref.page - 2,
+                                });
+                              } else if (
+                                mode === "yt" &&
+                                ref.timestamp?.start
+                              ) {
+                                const startTime =
+                                  typeof ref.timestamp.start === "string"
+                                    ? timeToSeconds(ref.timestamp.start)
+                                    : ref.timestamp.start;
+
+                                handleSeek(startTime);
+                              }
+                            }}
                             className="block text-blue-600 dark:text-blue-400 hover:underline text-left w-full break-words"
                           >
-                            🔗 Page {ref.page}: {ref.preview.slice(0, 80)}
-                            ...
+                            {mode === "pdf"
+                              ? `🔗 Page ${ref.page}: ${ref.preview.slice(
+                                  0,
+                                  80
+                                )}...`
+                              : `⏱️ Timestamp: ${
+                                  ref.timestamp.start
+                                }s – ${ref.text.slice(0, 80)}...`}
                           </button>
                         ))}
                       </div>
@@ -140,7 +194,6 @@ function Model2results({
                   );
                 }
 
-                // Existing AI and user message rendering
                 return (
                   <div
                     key={index}
@@ -155,9 +208,15 @@ function Model2results({
                           : "bg-slate-100 dark:bg-slate-700"
                       } rounded-lg p-3 max-w-[80%] min-w-0`}
                     >
-                      <p className="text-sm text-slate-900 dark:text-slate-100 break-words">
-                        {msg.text}
-                      </p>
+                      {msg.type === "ai" ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-900 dark:text-slate-100 break-words overflow-x-auto">
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-900 dark:text-slate-100 break-words">
+                          {msg.text}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -254,15 +313,25 @@ function Model2results({
               </div>
             ) : (
               <div className="h-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <LinkIcon className="w-12 h-12 text-slate-400 mx-auto mb-2" />
-                  <p className="text-slate-600 dark:text-slate-400">
-                    Video Player
-                  </p>
-                  <p className="text-slate-500 dark:text-slate-500 text-sm mt-1 break-all">
-                    {url}
-                  </p>
-                  {/* You can embed YouTube player here */}
+                <div className="w-full h-full p-4">
+                  {url ? (
+                    <YouTube
+                      videoId={getYoutubeVideoId(url)}
+                      opts={{
+                        width: "100%",
+                        height: "100%",
+                        playerVars: {
+                          autoplay: 1,
+                        },
+                      }}
+                      onReady={(e) => setPlayer(e.target)}
+                      className="rounded-lg border border-slate-300 dark:border-slate-600 w-full h-full"
+                    />
+                  ) : (
+                    <div className="text-center text-slate-500 dark:text-slate-400">
+                      No video URL provided.
+                    </div>
+                  )}
                 </div>
               </div>
             )}

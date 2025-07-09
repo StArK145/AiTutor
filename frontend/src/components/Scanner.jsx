@@ -8,7 +8,7 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import Model2history from "./Model2history";
 
-import {fetchUserPDFList} from "../utils/contentScan";
+import { fetchUserPDFList } from "../utils/contentScan";
 import {
   Upload,
   FileText,
@@ -131,7 +131,7 @@ function Scanner() {
         let data = await analyzeYoutube(url);
         setIsLoading(true);
         console.log("YouTube analysis response:", data);
-        
+
         setResponse(data);
         setActiveTab("results");
         return;
@@ -162,7 +162,6 @@ function Scanner() {
 
   /* ---------- helpers ---------- */
   const prettyJson = (json) => JSON.stringify(json, null, 2);
-
 
   return (
     <div className="space-y-6">
@@ -312,9 +311,9 @@ function Scanner() {
               <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
             </div>
           )}
+          <Model2history />
         </section>
       )}
-      <Model2history/>
 
       {/* ---------------- TAB 2 : RESULTS ---------------- */}
       {activeTab === "results" && (

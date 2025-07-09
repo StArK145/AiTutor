@@ -106,3 +106,88 @@ export async function fetchUserPDFList() {
     throw err;
   }
 }
+
+
+
+export async function deletePdf(pdfId) {
+  try {
+    const idToken = await getFirebaseIdToken();
+    const csrf = await getCsrfToken();
+    if (!idToken) throw new Error("User not authenticated");
+
+    const response = await axios.delete(`${API_BASE}/user/pdfs/${pdfId}/`, {
+      headers: {
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
+
+    return {
+      success: true,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Delete PDF error:", error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Something went wrong",
+      error: error.response?.data?.error || null,
+    };
+  }
+}
+
+export async function askYoutubeQuestion(videoId, question) {
+  const token = await getFirebaseIdToken();
+  const csrf = await getCsrfToken();
+  if (!token) throw new Error("User not authenticated");
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_BASE}/ask-youtube-question/`,
+    { video_id: videoId, question },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return res.data;
+}
+
+
+
+export async function fetchYouTubeHistory() {
+  const token = await getFirebaseIdToken();
+  const csrf = await getCsrfToken();
+  if (!token) throw new Error("User not authenticated");
+  const res = await fetch(`${API_BASE}/user/youtube-videos/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-CSRFToken": csrf,  // Optional if using CSRF protection
+      "Content-Type": "application/json",
+    },
+  });
+  const json = await res.json();
+  if (!json.status) throw new Error("Failed to fetch YouTube history");
+  return json.data;
+}
+
+
+export async function deleteYoutubeVideo(videoId) {
+  const token = await getFirebaseIdToken();
+  const csrf = await getCsrfToken();
+  if (!token) throw new Error("User not authenticated");
+  const res = await fetch(`${API_BASE}/user/youtube-videos/${videoId}/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-CSRFToken": csrf,  // Optional if using CSRF protection
+      "Content-Type": "application/json",
+    },
+  });
+
+  const json = await res.json();
+  if (!json.status) throw new Error(json.error || "Failed to delete video");
+  return json;
+}
