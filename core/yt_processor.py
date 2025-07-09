@@ -6,6 +6,7 @@ import logging
 from typing import List, Dict, Optional, Union
 from yt_dlp import YoutubeDL
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -77,8 +78,8 @@ class YouTubeProcessor:
         return f"https://www.youtube.com/watch?v={video_id}&t={int(timestamp)}s"
 
     def get_transcript(self, video_id: str) -> Union[List[Dict], None]:
-        """Get transcript with preference for English, then Hindi, then None"""
-        # First try to get English transcript
+        """Get transcript with preference for English, then Hindi (including auto-generated), then None"""
+        # First try to get English transcript (manual or auto-generated)
         try:
             transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
             print("Found English transcript")
@@ -86,13 +87,24 @@ class YouTubeProcessor:
         except Exception as e:
             print(f"Couldn't find English transcript: {str(e)}")
         
-        # If English not available, try Hindi
+        # If English not available, try Hindi (including auto-generated)
         try:
+            # First try manual Hindi transcript
             transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
-            print("Found Hindi transcript (English not available)")
+            print("Found manual Hindi transcript")
             return transcript, 'hi'
+        except NoTranscriptFound:
+            # If no manual Hindi transcript, try auto-generated Hindi
+            try:
+                transcript = YouTubeTranscriptApi.list_transcripts(video_id)
+                for t in transcript:
+                    if t.language_code == 'hi' and t.is_generated:
+                        print("Found auto-generated Hindi transcript")
+                        return t.fetch(), 'hi'
+            except Exception as e:
+                print(f"Couldn't find Hindi transcript (manual or auto-generated): {str(e)}")
         except Exception as e:
-            print(f"Couldn't find Hindi transcript: {str(e)}")
+            print(f"Error while fetching Hindi transcript: {str(e)}")
         
         # If neither is available, return None
         return None, None
