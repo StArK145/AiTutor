@@ -6,8 +6,9 @@ import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { highlightPlugin } from "@react-pdf-viewer/highlight";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+import Model2history from "./Model2history";
 
-import { askPdfQuestion } from "../utils/contentScan";
+import {fetchUserPDFList} from "../utils/contentScan";
 import {
   Upload,
   FileText,
@@ -162,7 +163,6 @@ function Scanner() {
   /* ---------- helpers ---------- */
   const prettyJson = (json) => JSON.stringify(json, null, 2);
 
-  /* ---------- render ---------- */
 
   return (
     <div className="space-y-6">
@@ -260,7 +260,7 @@ function Scanner() {
                   <input
                     type="text"
                     placeholder={getCurrentModeConfig()?.placeholder}
-                    value={url}
+                    value={url || ""}
                     onChange={handleUrlChange}
                     className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
@@ -314,6 +314,7 @@ function Scanner() {
           )}
         </section>
       )}
+      <Model2history/>
 
       {/* ---------------- TAB 2 : RESULTS ---------------- */}
       {activeTab === "results" && (

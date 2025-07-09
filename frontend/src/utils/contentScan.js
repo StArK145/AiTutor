@@ -75,3 +75,34 @@ export async function askPdfQuestion(pdfId, question) {
 
   return res.data;                          
 }
+
+
+
+export async function fetchUserPDFList() {
+  try {
+    const idToken = await getFirebaseIdToken(); // Ensure you have a valid Firebase ID token
+    const csrf = await getCsrfToken();
+    if (!idToken) throw new Error("User not authenticated");
+
+
+    const response = await fetch(`${API_BASE}/user/pdfs/`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${idToken}`,
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.status) {
+      throw new Error(data.error || "Failed to fetch PDF list.");
+    }
+
+    return data.data; // Array of PDFs
+  } catch (err) {
+    console.error("Error fetching user PDFs:", err);
+    throw err;
+  }
+}
