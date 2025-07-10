@@ -16,7 +16,7 @@ from .firebase_auth import FirebaseAuthentication
 from rest_framework.permissions import IsAuthenticated
 import traceback
 from django.contrib.auth import get_user_model
-from .utils import generate_chapter_names  # Ensure this utility function is defined in utils.py
+from .utils import generate_chapter_names  
 from .yt_processor import YouTubeProcessor
 from .models import UserYouTubeVideo, YouTubeConversation,ChapterResource
 from .yt_processor import YouTubeProcessor
@@ -151,6 +151,32 @@ class ChapterGenerationHistoryAPI(APIView):
             'chapter_count': gen.chapters.count()
         } for gen in generations]
         return JsonResponse({'data': data})
+    
+    
+class DeleteChapterGenerationAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, generation_id):
+        try:
+            generation = ChapterGeneration.objects.get(id=generation_id, user=request.user)
+            generation.delete()
+            return JsonResponse({
+                'status': True,
+                'message': 'Chapter generation and all related chapters deleted successfully'
+            })
+        except ChapterGeneration.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'Chapter generation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to delete chapter generation'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class ChapterResourcesAPI(APIView):
     authentication_classes = [FirebaseAuthentication]
