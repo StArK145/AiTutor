@@ -1,4 +1,5 @@
 import React from "react";
+import { useState } from "react";
 import {
   BookOpen,
   ExternalLink,
@@ -11,10 +12,42 @@ import {
 function ResultsView({
   chapters, videos, websites,
   loading, error,
-  handleChapterClick,
+  topic, grade,
+  fromHistory,
+  setError,
+  fetchVideoResources, fetchWebResources,
+  setLoading,
+  setVideos, setWebsites,
   activeTab, setActiveTab,
   onBack,
 }) {
+  const handleChapterClick = async (e) => {
+    const chapter = e.target.innerHTML;
+
+    if (!topic?.trim()) return setError("Topic cannot be blank");
+    if (!grade?.trim()) return setError("Grade cannot be blank");
+    if (!chapter) return setError("Chapter cannot be blank");
+    setVideos([]);
+    setWebsites([]);
+
+    try {
+      setError("");
+      setLoading(true);
+
+      await fetchVideoResources(chapter);
+
+      const websitesArr = await fetchWebResources({ topic, grade, chapter });
+      setWebsites(websitesArr);
+    } catch (err) {
+      const backendMsg = err?.response?.data?.error;
+      setError(backendMsg || err.message || "Failed to fetch resources");
+      setVideos([]);
+      setWebsites([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <div className="space-y-6">
       {/* Back button */}

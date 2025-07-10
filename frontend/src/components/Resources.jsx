@@ -1,10 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { getCsrfToken } from "../utils/api"; // Adjust the import path
-import { BookOpen, Sparkles, GraduationCap, AlertCircle, Play, ExternalLink, Loader2 } from "lucide-react";
+import {
+  BookOpen,
+  Sparkles,
+  GraduationCap,
+  AlertCircle,
+  Play,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 import ResultsView from "./ResultsView"; // Adjust the import path
-import {getFirebaseIdToken} from "../utils/firebase"; // Adjust the import path
+import { getFirebaseIdToken } from "../utils/firebase"; // Adjust the import path
 import Model1history from "./Model1history";
+import { AuthContext } from "../contexts/AuthContext";
+import { getCsrfToken } from "../utils/api"; // Adjust the import path
 
 
 function Resources() {
@@ -16,8 +25,9 @@ function Resources() {
   const [loading, setLoading] = useState(false);
   const [videos, setVideos] = useState([]);
   const [websites, setWebsites] = useState([]);
-   const [activeTab, setActiveTab] = useState("form"); 
-  
+  const [activeTab, setActiveTab] = useState("form");
+  const [fromHistory, setFromHistory] = useState(false);
+
   const gradeOptions = [
     { value: "school", label: "Elementary School", icon: "🎒" },
     { value: "high school", label: "High School", icon: "📚" },
@@ -27,19 +37,19 @@ function Resources() {
 
   const API_BASE = import.meta.env.VITE_API_BASE;
 
-  
-
   const generateChapters = async () => {
     if (!topic.trim() || !grade.trim()) {
       setFormError("Please fill in both the topic and grade.");
       setChapters([]);
       return;
     }
-    const idToken = await getFirebaseIdToken();
-    const csrfToken = await getCsrfToken();
+
 
     setLoading(true);
     try {
+      const csrfToken = await getCsrfToken();
+      const firebaseIdToken = await getFirebaseIdToken();
+
       const res = await axios.post(
         `${API_BASE}/chapters/`,
         { topic, grade },
@@ -48,7 +58,7 @@ function Resources() {
           headers: {
             "X-CSRFToken": csrfToken,
             "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`, // Include Firebase ID token if needed
+            Authorization: `Bearer ${firebaseIdToken}`, // Include Firebase ID token if needed
           },
         }
       );
@@ -117,32 +127,32 @@ function Resources() {
     return res.data?.data?.websites || [];
   };
 
-  const handleChapterClick = async (e) => {
-    const chapter = e.target.innerHTML;
+  // const handleChapterClick = async (e) => {
+  //   const chapter = e.target.innerHTML;
 
-    if (!topic?.trim()) return setError("Topic cannot be blank");
-    if (!grade?.trim()) return setError("Grade cannot be blank");
-    if (!chapter) return setError("Chapter cannot be blank");
-    setVideos([]);
-    setWebsites([]);
+  //   if (!topic?.trim()) return setError("Topic cannot be blank");
+  //   if (!grade?.trim()) return setError("Grade cannot be blank");
+  //   if (!chapter) return setError("Chapter cannot be blank");
+  //   setVideos([]);
+  //   setWebsites([]);
 
-    try {
-      setError("");
-      setLoading(true);
+  //   try {
+  //     setError("");
+  //     setLoading(true);
 
-      await fetchVideoResources(chapter);
+  //     await fetchVideoResources(chapter);
 
-      const websitesArr = await fetchWebResources({ topic, grade, chapter });
-      setWebsites(websitesArr);
-    } catch (err) {
-      const backendMsg = err?.response?.data?.error;
-      setError(backendMsg || err.message || "Failed to fetch resources");
-      setVideos([]);
-      setWebsites([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     const websitesArr = await fetchWebResources({ topic, grade, chapter });
+  //     setWebsites(websitesArr);
+  //   } catch (err) {
+  //     const backendMsg = err?.response?.data?.error;
+  //     setError(backendMsg || err.message || "Failed to fetch resources");
+  //     setVideos([]);
+  //     setWebsites([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="space-y-6">
@@ -247,23 +257,32 @@ function Resources() {
               </span>
             )}
           </button>
-          <Model1history />
+          <Model1history 
+          setActiveTab={setActiveTab}
+          setFromHistory={setFromHistory}
+          />
         </section>
       )}
 
       {/* ---------------- TAB 2 : RESULTS ---------------- */}
       {activeTab === "results" && (
-  <ResultsView
-    chapters={chapters}
-    videos={videos}
-    websites={websites}
-    loading={loading}
-    error={error}
-    topic={topic}
-    grade={grade}
-    handleChapterClick={handleChapterClick}
-    onBack={() => setActiveTab("form")}
-  />
+        <ResultsView
+          chapters={chapters}
+          videos={videos}
+          websites={websites}
+          loading={loading}
+          error={error}
+          setError={setError}
+          topic={topic}
+          fetchVideoResources={fetchVideoResources}
+          fetchWebResources={fetchWebResources}
+          grade={grade}
+          setVideos={setVideos}
+          setWebsites={setWebsites}
+          setLoading={setLoading}
+          fromHistory={fromHistory}
+          onBack={() => setActiveTab("form")}
+        />
       )}
     </div>
   );

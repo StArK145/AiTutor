@@ -164,7 +164,7 @@ export async function fetchYouTubeHistory() {
   const res = await fetch(`${API_BASE}/user/youtube-videos/`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "X-CSRFToken": csrf,  // Optional if using CSRF protection
+      "X-CSRFToken": csrf,  
       "Content-Type": "application/json",
     },
   });
@@ -182,7 +182,7 @@ export async function deleteYoutubeVideo(videoId) {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
-      "X-CSRFToken": csrf,  // Optional if using CSRF protection
+      "X-CSRFToken": csrf, 
       "Content-Type": "application/json",
     },
   });
@@ -194,17 +194,63 @@ export async function deleteYoutubeVideo(videoId) {
 
 
 export async function fetchChapterGenerationHistory() {
+   // if CSRF is enabled
   const idToken = await getFirebaseIdToken();
-  const csrfToken = await getCsrfToken(); // if CSRF is enabled
-
+  const csrfToken = await getCsrfToken();
+  if (!idToken) throw new Error("User not authenticated");
   const res = await axios.get(`${API_BASE}/chapters/history/`, {
     withCredentials: true,
     headers: {
       Authorization: `Bearer ${idToken}`,
       "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken, // include if your Django setup requires it
+      "X-CSRFToken": csrfToken, 
     },
   });
 
   return res.data.data;
+}
+
+
+export async function deleteChapterGeneration(generationId) {
+  const firebaseIdToken = await getFirebaseIdToken();
+  const csrfToken = await getCsrfToken();
+
+  const res = await fetch(`${API_BASE}/chapters/${generationId}/`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${firebaseIdToken}`,
+      "X-CSRFToken": csrfToken,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Failed to delete generation");
+  }
+
+  return await res.json();
+}
+
+
+export async function fetchChapterResources(generationId) {
+  try {
+    const idToken = await getFirebaseIdToken();
+    const csrfToken = await getCsrfToken(); 
+    if (!idToken) throw new Error("User not authenticated");
+
+    const response = await axios.get(`${API_BASE}/chapters/${generationId}/resources/`, {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data.data; 
+  } catch (error) {
+    console.error("Error fetching chapter resources:", error);
+    throw error;
+  }
 }

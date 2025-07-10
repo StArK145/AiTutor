@@ -4,6 +4,7 @@ import { History, FileText, Youtube, Clock, MessageSquare } from "lucide-react";
 import { deletePdf } from "../utils/contentScan"; // Import the delete function
 import { fetchYouTubeHistory, deleteYoutubeVideo } from "../utils/contentScan"; // Import YouTube functions
 
+
 // Custom scrollbar styles
 const scrollbarStyles = `
   .custom-scrollbar::-webkit-scrollbar {

@@ -7,33 +7,40 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [firebaseUid, setFirebaseUid] = useState(null);
-  const [csrfToken, setCsrfToken] = useState(null);
   const [firebaseIdToken, setFirebaseIdToken] = useState(null);
+  const [csrfToken, setCsrfToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const API_BASE = import.meta.env.VITE_API_BASE;
   const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
       if (user) {
-        const idToken = await user.getIdToken();
-        setFirebaseUid(user.uid);
-        setFirebaseIdToken(idToken);
-
         try {
-          const res = await axios.get(
-            `${import.meta.env.VITE_API_BASE}/get-csrf/`,
-            {
-              headers: { Authorization: `Bearer ${idToken}` },
-              withCredentials: true,
-            }
-          );
-          setCsrfToken(res.data.csrfToken);
+          const idToken = await user.getIdToken();
+          setFirebaseUid(user.uid);
+          setFirebaseIdToken(idToken);
+
+          // Fetch CSRF only once after login
+          const res = await axios.get(`${API_BASE}/get-csrf/`, {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+            withCredentials: true, // include cookies
+          });
+
+          if (res.data.csrfToken) {
+            setCsrfToken(res.data.csrfToken);
+          } else {
+            console.warn("No CSRF token in response");
+          }
         } catch (err) {
-          console.error("Error fetching CSRF:", err);
+          console.error("Error during login token or CSRF fetch:", err);
         }
       } else {
+        // Clear everything if user logs out
         setFirebaseUid(null);
         setFirebaseIdToken(null);
         setCsrfToken(null);
@@ -46,7 +53,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUid, csrfToken, firebaseIdToken, loading }}
+      value={{ firebaseUid, firebaseIdToken, csrfToken, loading }}
     >
       {children}
     </AuthContext.Provider>

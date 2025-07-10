@@ -96,6 +96,7 @@ const AuthForm = () => {
           },
         );
       }
+      setIsLogin(true);
       navigate('/dashboard');
     } catch (error) {
       console.error(error);
