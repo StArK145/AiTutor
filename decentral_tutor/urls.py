@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI, WebResourcesAPI, PDFQAAPI, QuestionAnswerAPI, UserPDFListAPI, DeletePDFAPI, PDFConversationHistoryAPI, YouTubeQuestionAPI, YouTubeVideoAPI, YouTubeVideoListAPI, YouTubeVideoDeleteAPI, ChapterGenerationHistoryAPI, ChapterResourcesAPI
+from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI, WebResourcesAPI, PDFQAAPI, QuestionAnswerAPI, UserPDFListAPI, DeletePDFAPI, PDFConversationHistoryAPI, YouTubeQuestionAPI, YouTubeVideoAPI, YouTubeVideoListAPI, YouTubeVideoDeleteAPI, ChapterGenerationHistoryAPI, ChapterResourcesAPI, DeleteChapterGenerationAPI
 from django.views.generic import TemplateView
 from core.api import get_csrf_token
 
@@ -16,6 +16,8 @@ urlpatterns = [
     path('api/chapters/<int:generation_id>/resources/', ChapterResourcesAPI.as_view(), name='api_chapter_resources'),
     path('api/videos/', VideoResourcesAPI.as_view(), name='api_videos'),
     path('api/websites/', WebResourcesAPI.as_view(), name='api_websites'),
+    path('api/chapters/<int:generation_id>/', DeleteChapterGenerationAPI.as_view(), name='api_delete_chapter_generation'),
+
     
     # PDF-related URLs
     path('api/process-pdf/', PDFQAAPI.as_view(), name='api_process_pdf'),
