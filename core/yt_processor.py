@@ -39,10 +39,23 @@ class YouTubeProcessor:
 
     @staticmethod
     def extract_video_id(video_url: str) -> str:
-        """Extract YouTube video ID from URL"""
+        """Extract YouTube video ID from URL.
+        Supports:
+        - https://www.youtube.com/watch?v=k4oWqYT6tjk
+        - https://youtu.be/k4oWqYT6tjk
+        - https://youtu.be/k4oWqYT6tjk?si=wdVFChAiQdIawmR1
+        - and similar variations
+        """
+        # Handle youtu.be URLs
+        if "youtu.be/" in video_url:
+            return video_url.split("youtu.be/")[1].split("?")[0].split("/")[0]
+        
+        # Handle standard YouTube URLs
         if "v=" in video_url:
             return video_url.split("v=")[1].split("&")[0]
-        return video_url  # Assume it's just the ID if no URL structure
+        
+        # If no pattern matches, return the original string (assuming it's just the ID)
+        return video_url
 
     @staticmethod
     def get_youtube_video_info(video_url: str) -> Dict:
