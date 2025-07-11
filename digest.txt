@@ -3,7 +3,7 @@ Directory structure:
     ├── db.sqlite3
     ├── manage.py
     ├── requirements.txt
-    ├── tesr.py
+    ├── test.py
     ├── core/
     │   ├── __init__.py
     │   ├── admin.py
@@ -12,12 +12,16 @@ Directory structure:
     │   ├── firebase_auth.py
     │   ├── managers.py
     │   ├── models.py
+    │   ├── pdf_processor.py
     │   ├── serializers.py
-    │   ├── tesr.py
     │   ├── tests.py
     │   ├── utils.py
+    │   ├── yt_processor.py
     │   └── migrations/
     │       ├── 0001_initial.py
+    │       ├── 0002_alter_user_options_userpdf_pdfconversation.py
+    │       ├── 0003_useryoutubevideo_youtubeconversation.py
+    │       ├── 0004_chaptergeneration_chapterresource_and_more.py
     │       └── __init__.py
     ├── decentral_tutor/
     │   ├── __init__.py
@@ -25,24 +29,42 @@ Directory structure:
     │   ├── settings.py
     │   ├── urls.py
     │   └── wsgi.py
-    └── frontend/
-        ├── README.md
-        ├── eslint.config.js
-        ├── index.html
-        ├── package.json
-        ├── vite.config.js
-        └── src/
-            ├── App.jsx
-            ├── index.css
-            ├── main.jsx
-            ├── pages/
-            │   ├── AuthForm.jsx
-            │   ├── Dashboard.jsx
-            │   ├── Home.jsx
-            │   └── NotFound.jsx
-            └── utils/
-                ├── api.js
-                └── firebase.js
+    ├── frontend/
+    │   ├── README.md
+    │   ├── eslint.config.js
+    │   ├── index.html
+    │   ├── package.json
+    │   ├── vite.config.js
+    │   └── src/
+    │       ├── App.jsx
+    │       ├── index.css
+    │       ├── main.jsx
+    │       ├── components/
+    │       │   ├── Model1history.jsx
+    │       │   ├── Model2history.jsx
+    │       │   ├── Model2results.jsx
+    │       │   ├── MultiMCQForm.jsx
+    │       │   ├── Resources.jsx
+    │       │   ├── ResultsView.jsx
+    │       │   └── Scanner.jsx
+    │       ├── contexts/
+    │       │   └── AuthContext.jsx
+    │       ├── pages/
+    │       │   ├── AuthForm.jsx
+    │       │   ├── Dashboard.jsx
+    │       │   ├── Home.jsx
+    │       │   └── NotFound.jsx
+    │       └── utils/
+    │           ├── api.js
+    │           ├── contentScan.js
+    │           ├── firebase.js
+    │           └── getCurrentUserUID.js
+    ├── transcripts/
+    │   └── multi_mcqs.json
+    └── vectorstores/
+        └── book_2IUpOTCYcLfJ1fLY8jItUCw11in1_book2/
+            ├── index.faiss
+            └── index.pkl
 
 ================================================
 FILE: db.sqlite3
@@ -92,97 +114,76 @@ django-cors-headers==4.7.0
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
 groq==0.29.0
+testtttttttttttt
 
 
 
 ================================================
-FILE: tesr.py
+FILE: test.py
 ================================================
+# test.py
+
 import requests
 import json
-import os
-from dotenv import load_dotenv
+from pprint import pprint
 
-# Load environment variables
-load_dotenv()
-
-# Configuration
 BASE_URL = "http://localhost:8000"
-API_URL = f"{BASE_URL}/api/login/"
+MULTI_MCQ_API = f"{BASE_URL}/api/generate-multi-mcqs/"
 
-# Test Firebase UID and user data
-TEST_UID = "simulated_firebase_uid_123"
-TEST_EMAIL = "testuser@example.com"
-TEST_USERNAME = "testuser"
+TEST_VIDEO_URLS = [
+    "https://youtube.com/watch?v=4dwsSz_fNSQ&pp=ygV8QUkgUm9ib3RpY3MgYW5kIEFJIENvbnRyb2wgU3lzdGVtczogIFBhdGggUGxhbm5pbmcsIFNlbnNvciBGdXNpb24sIFJlaW5mb3JjZW1lbnQgTGVhcm5pbmcgQ29udHJvbCB0dXRvcmlhbCBmb3IgY29sbGVnZSBncmFkZQ%3D%3D"
+] * 4  # repeat same video 4 times for test
 
-def test_user_creation():
-    """Simulate frontend sending user data to backend"""
+def test_generate_mcqs_from_multiple_videos():
     headers = {
-        "X-Firebase-UID": TEST_UID,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
     }
+
+    payload = {
+        "video_urls": TEST_VIDEO_URLS
+    }
+
+    print("▶ Sending request to generate MCQs from 4 videos...")
+    res = requests.post(MULTI_MCQ_API, headers=headers, json=payload)
+
+    print("\n=== Response ===")
+    print(f"Status Code: {res.status_code}")
     
-    data = {
-        "email": TEST_EMAIL,
-        "username": TEST_USERNAME
-    }
-
-    print(f"\nTesting user creation at {API_URL}")
-    print(f"Headers: {json.dumps(headers, indent=2)}")
-    print(f"Data: {json.dumps(data, indent=2)}")
-
     try:
-        response = requests.post(
-            API_URL,
-            headers=headers,
-            json=data
-        )
-        
-        print("\nResponse:")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Body: {json.dumps(response.json(), indent=2)}")
-        
-        return response.status_code == 201  # 201 Created
-        
+        data = res.json()
+        pprint(data)
     except Exception as e:
-        print(f"\nError making request: {str(e)}")
-        return False
+        print("[ERROR] Failed to parse JSON:")
+        print(res.text)
+        return
 
-def verify_user_in_db():
-    """Check if user exists in database"""
-    from core.models import User
-    try:
-        user = User.objects.get(firebase_uid=TEST_UID)
-        print(f"\nUser found in database:")
-        print(f"UID: {user.firebase_uid}")
-        print(f"Email: {user.email}")
-        print(f"Username: {user.username}")
-        return True
-    except User.DoesNotExist:
-        print("\nUser not found in database")
-        return False
-    except Exception as e:
-        print(f"\nError checking database: {str(e)}")
-        return False
+    if res.status_code == 200 and data.get("status"):
+        print("\n✅ MCQs generated successfully!")
+        print(f"Total Questions: {data.get('total_questions', 0)}")
+
+        for i, q in enumerate(data["questions"], 1):
+            print(f"\n{i}. {q['question']}")
+            for opt, text in q['options'].items():
+                mark = "*" if opt == q['correct_answer'] else ""
+                print(f"   {opt}) {text} {mark}")
+            print(f"   Watch at: {q['youtube_url']}")
+            print(f"   Explanation: {q['explanation']}")
+    else:
+        print("\n❌ Failed to generate MCQs.")
+        if "questions" in data and not data["questions"]:
+            print("[INFO] Empty MCQ list returned.")
+        elif "error" in data:
+            print("[ERROR]", data["error"])
+        elif "traceback" in data:
+            print("[DEBUG] Traceback Info:")
+            print(data["traceback"])
+        else:
+            print("[DEBUG] Full response:")
+            pprint(data)
 
 if __name__ == "__main__":
-    # Run the test
-    print("=== Testing User Creation ===")
-    
-    # Part 1: Simulate API call
-    success = test_user_creation()
-    
-    # Part 2: Verify database (requires Django context)
-    if success:
-        print("\n=== Verifying Database ===")
-        # Need to setup Django environment to access models
-        import django
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'decentral_tutor.settings')
-        django.setup()
-        
-        verify_user_in_db()
-    
-    print("\nTest complete!")
+    test_generate_mcqs_from_multiple_videos()
+
 
 
 ================================================
@@ -206,15 +207,37 @@ FILE: core/api.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from django.contrib.auth import get_user_model
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
+from .pdf_processor import PDFProcessor
+import os
+from django.conf import settings
+from .models import UserPDF, PDFConversation, ChapterGeneration
+import json
+from .firebase_auth import FirebaseAuthentication
+from rest_framework.permissions import IsAuthenticated
+import traceback
+from django.contrib.auth import get_user_model
+from .utils import generate_chapter_names  
+from .yt_processor import YouTubeProcessor
+from .models import UserYouTubeVideo, YouTubeConversation,ChapterResource
+from .yt_processor import YouTubeProcessor
+from .models import ChapterVideoResource, ChapterWebResource
+from .utils import get_video_resources, get_web_resources   
+from django.contrib.auth import get_user_model
+
+
+
 
 User = get_user_model()
 
+
 class FirebaseLoginAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -226,7 +249,7 @@ class FirebaseLoginAPI(APIView):
         firebase_uid = request.headers.get('X-Firebase-UID')
         if not firebase_uid:
             print("!! Missing Firebase UID header")
-            return Response(
+            return JsonResponse(
                 {'error': 'Missing Firebase UID in headers'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -234,7 +257,7 @@ class FirebaseLoginAPI(APIView):
         email = request.data.get('email')
         if not email:
             print("!! Missing email in request data")
-            return Response(
+            return JsonResponse(
                 {'error': 'Email is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -249,14 +272,14 @@ class FirebaseLoginAPI(APIView):
         )
 
         if created:
-            return Response({
+            return JsonResponse({
                 'uid': user.firebase_uid,
                 'email': user.email,
                 'username': user.username,
                 'message': 'User created successfully'
             }, status=status.HTTP_201_CREATED)
         
-        return Response({
+        return JsonResponse({
             'uid': user.firebase_uid,
             'email': user.email,
             'username': user.username,
@@ -266,74 +289,172 @@ class FirebaseLoginAPI(APIView):
 
 
 class DashboardAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        return Response({"message": "Dashboard API"}, status=status.HTTP_200_OK)
+        return JsonResponse({"message": "Dashboard API"}, status=status.HTTP_200_OK)
     
     
-# Add to core/api.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from .utils import generate_chapter_names  # Make sure to import the function
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+
 
 class ChapterAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            # Get topic and grade from request data
             topic = request.data.get('topic')
             grade = request.data.get('grade')
             
-            # Validate required fields
-            if not topic:
-                return Response(
-                    {'error': 'Topic is required', 'status': False},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if not grade:
-                return Response(
-                    {'error': 'Grade/level is required', 'status': False},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Validate inputs
+            if not topic or not grade:
+                return JsonResponse({'error': 'Topic and grade are required'}, status=400)
             
             # Generate chapters
             chapters = generate_chapter_names(topic, grade)
             
-            # Return success response with chapters
-            return Response({
+            # Save generation record
+            generation = ChapterGeneration.objects.create(
+                user=request.user,
+                topic=topic,
+                grade=grade
+            )
+            
+            # Save chapters without resources
+            for i, chapter_name in enumerate(chapters):
+                ChapterResource.objects.create(
+                    generation=generation,
+                    name=chapter_name,
+                    position=i
+                )
+            
+            return JsonResponse({
                 'status': True,
-                'message': 'Chapters generated successfully',
                 'data': {
+                    'generation_id': generation.id,
                     'topic': topic,
                     'grade': grade,
                     'chapters': chapters
                 }
-            }, status=status.HTTP_200_OK)
+            })
             
         except Exception as e:
-            # Return error response
-            return Response({
-                'status': False,
-                'error': str(e),
-                'message': 'Failed to generate chapters'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({'error': str(e)}, status=500)
         
 @api_view(['GET'])
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
+# core/api.py
 
+class ChapterGenerationHistoryAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        generations = ChapterGeneration.objects.filter(user=request.user).order_by('-created_at')
+        data = [{
+            'id': gen.id,
+            'topic': gen.topic,
+            'grade': gen.grade,
+            'created_at': gen.created_at,
+            'chapter_count': gen.chapters.count()
+        } for gen in generations]
+        return JsonResponse({'data': data})
+    
+    
+class DeleteChapterGenerationAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, generation_id):
+        try:
+            generation = ChapterGeneration.objects.get(id=generation_id, user=request.user)
+            generation.delete()
+            return JsonResponse({
+                'status': True,
+                'message': 'Chapter generation and all related chapters deleted successfully'
+            })
+        except ChapterGeneration.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'Chapter generation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to delete chapter generation'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ChapterResourcesAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, generation_id):
+        try:
+            generation = ChapterGeneration.objects.get(id=generation_id, user=request.user)
+            chapters = generation.chapters.all().order_by('position')
+            
+            data = []
+            for chapter in chapters:
+                # Check if chapter already has resources
+                has_resources = chapter.videos.exists() or chapter.websites.exists()
+                
+                if not has_resources:
+                    # Generate and save resources if none exist
+                    videos = get_video_resources(generation.topic, generation.grade, chapter.name)
+                    websites = get_web_resources(generation.topic, generation.grade, chapter.name)
+                    
+                    # Save videos
+                    for video in videos[:4]:  # Limit to 4 videos
+                        ChapterVideoResource.objects.create(
+                            chapter=chapter,
+                            title=video['title'],
+                            url=video['url'],
+                            channel=video['channel'],
+                            duration=video['duration']
+                        )
+                    
+                    # Save websites
+                    for website in websites[:4]:  # Limit to 4 websites
+                        ChapterWebResource.objects.create(
+                            chapter=chapter,
+                            title=website['title'],
+                            url=website['url'],
+                            source=website['source']
+                        )
+                
+                # Get all resources (either existing or newly created)
+                chapter_data = {
+                    'id': chapter.id,
+                    'name': chapter.name,
+                    'videos': [{
+                        'title': v.title,
+                        'url': v.url,
+                        'channel': v.channel,
+                        'duration': v.duration
+                    } for v in chapter.videos.all()],
+                    'websites': [{
+                        'title': w.title,
+                        'url': w.url,
+                        'source': w.source
+                    } for w in chapter.websites.all()]
+                }
+                data.append(chapter_data)
+            
+            return JsonResponse({'data': data})
+            
+        except ChapterGeneration.DoesNotExist:
+            return JsonResponse({'error': 'Not found'}, status=404)
 
 
 from .utils import get_video_resources
 
 class VideoResourcesAPI(APIView):
-    permission_classes = [AllowAny]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
@@ -344,17 +465,17 @@ class VideoResourcesAPI(APIView):
             
             # Validate required fields
             if not topic:
-                return Response(
+                return JsonResponse(
                     {'error': 'Topic is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not grade:
-                return Response(
+                return JsonResponse(
                     {'error': 'Grade/level is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if not chapter:
-                return Response(
+                return JsonResponse(
                     {'error': 'Chapter name is required', 'status': False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
@@ -376,11 +497,508 @@ class VideoResourcesAPI(APIView):
             
         except Exception as e:
             # Return error response
-            return Response({
+            return JsonResponse({
                 'status': False,
                 'error': str(e),
                 'message': 'Failed to fetch video resources'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+            
+from .utils import get_web_resources  # Make sure this is imported at the top
+
+class WebResourcesAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Get topic, grade and chapter from request data
+            topic = request.data.get('topic')
+            grade = request.data.get('grade')
+            chapter = request.data.get('chapter')
+            
+            # Validate required fields
+            if not topic:
+                return JsonResponse(
+                    {'error': 'Topic is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not grade:
+                return JsonResponse(
+                    {'error': 'Grade/level is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not chapter:
+                return JsonResponse(
+                    {'error': 'Chapter name is required', 'status': False},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get web resources (limited to 4 by the utility function)
+            websites = get_web_resources(topic, grade, chapter)
+            
+            # Return success response with web resources
+            return JsonResponse({
+                'status': True,
+                'message': 'Web resources fetched successfully',
+                'data': {
+                    'topic': topic,
+                    'grade': grade,
+                    'chapter': chapter,
+                    'websites': websites
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Return error response
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to fetch web resources'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class PDFQAAPI(APIView):
+    parser_classes = [MultiPartParser]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]# Changed to require authentication
+
+    def post(self, request):
+        pdf_file = request.FILES.get('pdf')
+        if not pdf_file:
+            return JsonResponse(
+                {'error': 'No PDF file provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Save file to user-specific directory
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'user_uploads', request.user.firebase_uid)
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = os.path.join(upload_dir, pdf_file.name)
+            
+            with open(file_path, 'wb+') as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+
+            # Process the PDF
+            processor = PDFProcessor()
+            chunks = processor.process_pdf(file_path)
+            store_name = f"book_{request.user.firebase_uid}_{os.path.splitext(pdf_file.name)[0]}"
+            processor.create_vector_store(chunks, store_name)
+            
+            # Save to database
+            user_pdf = UserPDF.objects.create(
+                user=request.user,
+                file_name=pdf_file.name,
+                vector_store=store_name
+            )
+            
+            return JsonResponse({
+                'status': True,
+                'message': 'PDF processed successfully',
+                'data': {
+                    'id': user_pdf.id,
+                    'file_name': user_pdf.file_name,
+                    'upload_time': user_pdf.upload_time
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to process PDF'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class QuestionAnswerAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        print("\n=== DEBUG: QuestionAnswerAPI Request ===")
+        print("Headers:", request.headers)
+        print("User:", request.user)
+        print("Request data:", request.data)
+        
+        pdf_id = request.data.get('pdf_id')
+        question = request.data.get('question')
+        
+        if not pdf_id or not question:
+            print("!! DEBUG: Missing pdf_id or question")
+            return JsonResponse(
+                {'error': 'Both pdf_id and question are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            print(f"!! DEBUG: Looking for PDF ID {pdf_id} for user {request.user}")
+            user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            print(f"!! DEBUG: Found PDF: {user_pdf.file_name}")
+            
+            # Verify vector store exists
+            vs_path = os.path.join(settings.BASE_DIR, "vectorstores", user_pdf.vector_store)
+            print(f"!! DEBUG: Vector store path: {vs_path}")
+            
+            if not os.path.exists(vs_path):
+                print("!! DEBUG: Vector store directory does not exist!")
+                return JsonResponse(
+                    {'error': 'Vector store not found. Please re-upload the PDF.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            processor = PDFProcessor()
+            print("!! DEBUG: Loading vector store...")
+            vs = processor.load_vector_store(user_pdf.vector_store)
+            print("!! DEBUG: Vector store loaded successfully")
+            
+            print("!! DEBUG: Generating answer...")
+            answer = processor.answer_question(vs, question)
+            print("!! DEBUG: Answer generated:", answer)
+            
+            # Save conversation
+            PDFConversation.objects.create(
+                pdf=user_pdf,
+                question=question,
+                answer=json.dumps(answer)
+            )
+            
+            return JsonResponse({
+                'status': True,
+                'data': answer
+            })
+            
+        except UserPDF.DoesNotExist:
+            print("!! DEBUG: PDF not found or doesn't belong to user")
+            return JsonResponse({
+                'status': False,
+                'error': 'PDF not found',
+                'message': 'You do not have access to this PDF'
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            print(f"!! DEBUG: Unexpected error: {str(e)}")
+            print(traceback.format_exc())  # This will print the full traceback
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'traceback': traceback.format_exc(),
+                'message': 'Failed to answer question'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserPDFListAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        pdfs = UserPDF.objects.filter(user=request.user).order_by('-upload_time')
+        data = [{
+            'id': pdf.id,
+            'file_name': pdf.file_name,
+            'upload_time': pdf.upload_time,
+            'conversation_count': pdf.conversations.count()
+        } for pdf in pdfs]
+        return JsonResponse({'status': True, 'data': data})
+
+class PDFConversationHistoryAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pdf_id):
+        try:
+            user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            conversations = user_pdf.conversations.all().order_by('-created_at')[:50]  # Limit to 50 most recent
+            data = [{
+                'question': conv.question,
+                'answer': json.loads(conv.answer),
+                'created_at': conv.created_at
+            } for conv in conversations]
+            return JsonResponse({'status': True, 'data': data})
+        except UserPDF.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'PDF not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+class DeletePDFAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pdf_id):
+        try:
+            user_pdf = UserPDF.objects.get(id=pdf_id, user=request.user)
+            
+            # Delete vector store
+            processor = PDFProcessor()
+            vectorstore_path = os.path.join(
+                settings.BASE_DIR, 
+                "vectorstores", 
+                user_pdf.vector_store
+            )
+            if os.path.exists(vectorstore_path):
+                import shutil
+                shutil.rmtree(vectorstore_path)
+            
+            # Delete the file
+            file_path = os.path.join(
+                settings.MEDIA_ROOT, 
+                'user_uploads', 
+                request.user.firebase_uid,
+                user_pdf.file_name
+            )
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            
+            # Delete database record
+            user_pdf.delete()
+            
+            return JsonResponse({
+                'status': True,
+                'message': 'PDF and all related data deleted successfully'
+            })
+            
+        except UserPDF.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'PDF not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to delete PDF'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+
+class YouTubeVideoAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        video_url = request.data.get('video_url')
+        if not video_url:
+            return JsonResponse(
+                {'error': 'YouTube video URL is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            processor = YouTubeProcessor()
+            
+            # Process video
+            video_id = processor.extract_video_id(video_url)
+            store_name = f"yt_{request.user.firebase_uid}_{video_id}"
+            
+            # This handles transcript loading and vector store creation
+            processing_result = processor.process_video(video_url, store_name)
+            
+            # Save to database
+            user_video = UserYouTubeVideo.objects.create(
+                user=request.user,
+                video_url=video_url,
+                video_id=video_id,
+                video_title=processing_result['video_info'].get('title', ''),
+                thumbnail_url=processing_result['video_info'].get('thumbnail', ''),
+                vector_store=store_name
+            )
+            
+            return JsonResponse({
+                'status': True,
+                'message': 'YouTube video processed successfully',
+                'data': {
+                    'id': user_video.id,
+                    'video_title': user_video.video_title,
+                    'thumbnail_url': user_video.thumbnail_url,
+                    'upload_time': user_video.upload_time
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to process YouTube video'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class YouTubeQuestionAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        video_id = request.data.get('video_id')
+        question = request.data.get('question')
+        
+        if not video_id or not question:
+            return JsonResponse(
+                {'error': 'Both video_id and question are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Verify video belongs to user
+            user_video = UserYouTubeVideo.objects.get(id=video_id, user=request.user)
+            processor = YouTubeProcessor()
+            
+            # Load vector store
+            vs = processor.load_vector_store(user_video.vector_store)
+            
+            # Generate answer
+            answer = processor.answer_question(vs, question)
+            
+            # Save conversation
+            YouTubeConversation.objects.create(
+                video=user_video,
+                question=question,
+                answer=json.dumps(answer)
+            )
+            
+            return JsonResponse({
+                'status': True,
+                'data': answer
+            })
+            
+        except UserYouTubeVideo.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'Video not found or access denied'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to answer question'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class YouTubeVideoListAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        videos = UserYouTubeVideo.objects.filter(user=request.user).order_by('-upload_time')
+        data = [{
+            'id': video.id,
+            'video_title': video.video_title,
+            'thumbnail_url': video.thumbnail_url,
+            'upload_time': video.upload_time,
+            'conversation_count': video.conversations.count()
+        } for video in videos]
+        return JsonResponse({'status': True, 'data': data})
+
+class YouTubeVideoDeleteAPI(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, video_id):
+        try:
+            user_video = UserYouTubeVideo.objects.get(id=video_id, user=request.user)
+            
+            # Delete vector store
+            vectorstore_path = os.path.join(
+                settings.BASE_DIR, 
+                "vectorstores", 
+                user_video.vector_store
+            )
+            if os.path.exists(vectorstore_path):
+                import shutil
+                shutil.rmtree(vectorstore_path)
+            
+            # Delete database record
+            user_video.delete()
+            
+            return JsonResponse({
+                'status': True,
+                'message': 'YouTube video and all related data deleted successfully'
+            })
+            
+        except UserYouTubeVideo.DoesNotExist:
+            return JsonResponse({
+                'status': False,
+                'error': 'Video not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e),
+                'message': 'Failed to delete video'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+from concurrent.futures import ThreadPoolExecutor
+import json
+
+from django.conf import settings
+from .utils import (
+    get_video_id,
+    download_youtube_transcript,
+    parse_transcript,
+    generate_mcqs_from_transcript
+)
+
+
+class MultiVideoMCQAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        video_urls = request.data.get("video_urls")
+        if not video_urls or len(video_urls) != 4:
+            return JsonResponse({"error": "Provide exactly 4 video URLs"}, status=400)
+
+        goal_distribution = [2, 3, 2, 3]
+
+        from .utils import get_transcript_chunks_from_youtube
+
+        def process_video(video_url):
+            try:
+                transcript_chunks = get_transcript_chunks_from_youtube(video_url)
+                if not transcript_chunks:
+                    return []
+                _, mcqs = generate_mcqs_from_transcript(transcript_chunks, get_video_id(video_url))
+                return mcqs or []
+            except Exception as e:
+                print(f"[ERROR] MCQ generation failed: {e}")
+                return []
+
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            all_mcqs = list(executor.map(process_video, video_urls))
+
+        # Step 1: Try to assign original goal distribution
+        combined_questions = []
+        leftovers = []
+
+        for mcqs, goal in zip(all_mcqs, goal_distribution):
+            if mcqs:
+                to_add = mcqs[:goal]
+                combined_questions.extend(to_add)
+                if len(mcqs) > goal:
+                    leftovers.extend(mcqs[goal:])
+            else:
+                # This video failed or returned empty
+                continue
+
+        # Step 2: Fill remaining questions from leftovers if total < 10
+        while len(combined_questions) < 10 and leftovers:
+            combined_questions.append(leftovers.pop(0))
+
+        # Step 3: If still not enough, just return what we have
+        combined_questions = combined_questions[:10]
+
+        # Save to JSON
+        save_path = os.path.join(settings.BASE_DIR, "transcripts", "multi_mcqs.json")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(combined_questions, f, indent=4)
+
+        return JsonResponse({
+            "status": True,
+            "total_questions": len(combined_questions),
+            "questions": combined_questions,
+            "saved_to": "/transcripts/multi_mcqs.json"
+        }, status=200)
 
 
 ================================================
@@ -402,10 +1020,11 @@ FILE: core/firebase_auth.py
 import firebase_admin
 from firebase_admin import auth, credentials
 from django.contrib.auth import get_user_model
-from rest_framework import authentication, exceptions
+from rest_framework import authentication
+from rest_framework.exceptions import AuthenticationFailed
 import os
 
-# Initialize Firebase app once
+# Initialize Firebase Admin SDK once
 if not firebase_admin._apps:
     cred = credentials.Certificate({
         "type": "service_account",
@@ -422,30 +1041,30 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 User = get_user_model()
+
 class FirebaseAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        auth_header = request.META.get("HTTP_AUTHORIZATION")
-        if not auth_header:
-            return None
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        if not auth_header.startswith("Bearer "):
+            return None  # No token provided
 
-        id_token = auth_header.split(" ").pop()
+        id_token = auth_header.split("Bearer ")[1]
+
         try:
             decoded_token = auth.verify_id_token(id_token)
             firebase_uid = decoded_token.get("uid")
             email = decoded_token.get("email")
         except Exception as e:
             print(f"Firebase token verification failed: {str(e)}")
-            return None
+            raise AuthenticationFailed("Invalid or expired Firebase ID token")
 
-        if not firebase_uid:
-            return None
+        if not firebase_uid or not email:
+            raise AuthenticationFailed("Missing UID or email in Firebase token")
 
         try:
             user = User.objects.get(firebase_uid=firebase_uid)
-            return (user, None)
         except User.DoesNotExist:
             try:
-                # Create new user
                 username = email.split("@")[0]
                 base_username = username
                 counter = 1
@@ -459,10 +1078,12 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
                     username=username
                 )
                 print(f"Created new user: {user}")
-                return (user, None)
             except Exception as e:
                 print(f"User creation failed: {str(e)}")
-                return None
+                raise AuthenticationFailed("User creation failed")
+
+        return (user, None)
+
 
 
 ================================================
@@ -521,6 +1142,268 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def has_module_perms(self, app_label):
         return self.is_staff
+    
+    def get_upload_dir(self, filename):
+        return f"user_uploads/{self.firebase_uid}/{filename}"
+    
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
+
+# core/models.py
+
+class ChapterGeneration(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_generations')
+    topic = models.CharField(max_length=255)
+    grade = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ChapterResource(models.Model):
+    generation = models.ForeignKey(ChapterGeneration, on_delete=models.CASCADE, related_name='chapters')
+    name = models.CharField(max_length=255)
+    position = models.IntegerField()  # To maintain original order
+
+class ChapterVideoResource(models.Model):
+    chapter = models.ForeignKey(ChapterResource, on_delete=models.CASCADE, related_name='videos')
+    title = models.TextField()
+    url = models.URLField()
+    channel = models.CharField(max_length=255)
+    duration = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ChapterWebResource(models.Model):
+    chapter = models.ForeignKey(ChapterResource, on_delete=models.CASCADE, related_name='websites')
+    title = models.TextField()
+    url = models.URLField()
+    source = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class UserPDF(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pdfs')
+    file_name = models.CharField(max_length=255)
+    vector_store = models.CharField(max_length=255)
+    upload_time = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s PDF: {self.file_name}"
+    
+class PDFConversation(models.Model):
+    pdf = models.ForeignKey(UserPDF, on_delete=models.CASCADE, related_name='conversations')
+    question = models.TextField()
+    answer = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Conversation about {self.pdf.file_name}"
+
+
+class UserYouTubeVideo(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='youtube_videos')
+    video_url = models.URLField()
+    video_id = models.CharField(max_length=20)  # Store YouTube video ID separately
+    video_title = models.CharField(max_length=255)
+    thumbnail_url = models.URLField()
+    vector_store = models.CharField(max_length=255)  # Store path to vector store
+    upload_time = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s Video: {self.video_title}"
+
+class YouTubeConversation(models.Model):
+    video = models.ForeignKey(UserYouTubeVideo, on_delete=models.CASCADE, related_name='conversations')
+    question = models.TextField()
+    answer = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Conversation about {self.video.video_title}"
+
+
+================================================
+FILE: core/pdf_processor.py
+================================================
+import os
+import time
+import requests
+import google.generativeai as genai
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema import Document
+import re
+import hashlib
+import json
+from django.conf import settings
+
+class PDFProcessor:
+    def __init__(self):
+        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        self.groq_model = "deepseek-r1-distill-llama-70b"
+        genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+        self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
+    def clean_text(self, text: str) -> str:
+        lines = text.splitlines()
+        cleaned_lines = [line for line in lines if not re.match(r'^[_\W\s]{5,}$', line.strip())]
+        return "\n".join(cleaned_lines).strip()
+
+    def generate_text_hash(self, text: str) -> str:
+        return hashlib.md5(text.encode('utf-8')).hexdigest()[:8]
+
+    def process_pdf(self, pdf_path):
+        print("Loading and chunking PDF with page tracking...")
+        loader = PyPDFLoader(pdf_path)
+        raw_pages = loader.load()
+
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=200)
+
+        chunks = []
+        for page_num, page_doc in enumerate(raw_pages, start=1):
+            page_text = self.clean_text(page_doc.page_content)
+            page_chunks = text_splitter.split_text(page_text)
+            
+            for chunk_num, chunk_text in enumerate(page_chunks, start=1):
+                start_pos = page_text.find(chunk_text)
+                end_pos = start_pos + len(chunk_text)
+                
+                chunks.append(Document(
+                    page_content=chunk_text,
+                    metadata={
+                        "source": pdf_path,
+                        "page": page_num,
+                        "chunk_id": f"p{page_num}c{chunk_num}",
+                        "position": {
+                            "start": start_pos,
+                            "end": end_pos,
+                            "length": len(chunk_text)
+                        },
+                        "preview": chunk_text[:50] + ("..." if len(chunk_text) > 50 else ""),
+                        "text_hash": self.generate_text_hash(chunk_text),
+                        "page_hash": self.generate_text_hash(page_text)
+                    }
+                ))
+
+        print(f"Created {len(chunks)} text chunks from {len(raw_pages)} pages")
+        return chunks
+
+    def create_vector_store(self, chunks, store_name):
+        print("Creating embeddings and vector store...")
+        vectorstore = FAISS.from_documents(chunks, self.embedding_model)
+        print(f"Vector store created with {vectorstore.index.ntotal} embeddings")
+        
+        # Save to user-specific directory
+        store_path = os.path.join(settings.BASE_DIR, "vectorstores", store_name)
+        vectorstore.save_local(store_path)
+        print(f"Vector store saved at {store_path}")
+        return vectorstore
+
+    def load_vector_store(self, store_name):
+        store_path = os.path.join(settings.BASE_DIR, "vectorstores", store_name)
+        return FAISS.load_local(
+            store_path,
+            self.embedding_model,
+            allow_dangerous_deserialization=True
+        )
+
+    def call_groq_llm(self, prompt):
+        headers = {
+            "Authorization": f"Bearer {self.groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": self.groq_model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful AI assistant. Your work is to answer the Question given in prompt by strictly taking help of provided Context. Your solution should be accurate and in detail"},
+                {"role": "user", "content": prompt}
+            ]
+        }
+
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
+        if response.status_code != 200:
+            raise Exception(f"Groq LLM error: {response.status_code} - {response.text}")
+        
+        return response.json()["choices"][0]["message"]["content"]
+
+    def expand_query_with_llm(self, query):
+        prompt = f"""You are an expert assistant. The user query below is too short for accurate search.
+So please you answer that query in 10 lines 
+
+Query: {query}
+
+Expanded version:"""
+        return self.call_groq_llm(prompt)
+
+    def answer_question(self, vectorstore, question):
+        # Step 1: Expand the query
+        expanded_query = self.expand_query_with_llm(question)
+        
+        # Step 2: Semantic search on expanded query
+        similar_docs = vectorstore.max_marginal_relevance_search(
+            query=expanded_query, 
+            k=5, 
+            fetch_k=25
+        )
+
+        if not similar_docs:
+            return {
+                "answer": "No relevant context found.",
+                "references": [],
+                "thinking_process": ""
+            }
+
+        # Prepare context for LLM
+        full_context = "\n\n".join([doc.page_content for doc in similar_docs])
+
+        # Generate answer with thinking process
+        prompt = f"""Analyze the question and provide:
+1. Your thinking process (marked with <thinking> tags)
+2. A detailed answer based strictly on the context
+3. Key points from each relevant chunk
+4. Be as detailed as possible
+
+Question: {question}
+
+Context:
+{full_context}
+
+Format your response as:
+<thinking>Your analytical process here</thinking>
+<answer>Your structured answer here</answer>"""
+        
+        llm_response = self.call_groq_llm(prompt)
+        
+        # Extract thinking and answer parts
+        thinking_process = llm_response.split("<thinking>")[1].split("</thinking>")[0].strip()
+        answer = llm_response.split("<answer>")[1].split("</answer>")[0].strip()
+
+        # Prepare structured response
+        response = {
+            "question": question,
+            "expanded_query": expanded_query,
+            "thinking_process": thinking_process,
+            "answer": answer,
+            "references": [
+                {
+                    "page": doc.metadata["page"],
+                    "chunk_id": doc.metadata["chunk_id"],
+                    "position": doc.metadata["position"],
+                    "text": doc.page_content,
+                    "preview": doc.metadata["preview"],
+                    "page_hash": doc.metadata["page_hash"],
+                    "text_hash": doc.metadata["text_hash"]
+                } for doc in similar_docs
+            ],
+            "context_hash": self.generate_text_hash(full_context)
+        }
+
+        return response
 
 
 ================================================
@@ -530,86 +1413,205 @@ FILE: core/serializers.py
 
 
 ================================================
-FILE: core/tesr.py
-================================================
-import requests
-import json
-from pprint import pprint
-from core.utils import get_video_resources  # Import the utility function directly
-
-# Configuration
-BASE_URL = "http://localhost:8000"
-VIDEO_API_URL = f"{BASE_URL}/api/videos/"
-
-def test_get_video_resources_directly():
-    """Test the get_video_resources function directly"""
-    print("\n=== Testing get_video_resources function directly ===")
-    
-    test_cases = [
-        ("Python Programming", "high school", "Functions and Modules"),
-        ("Quantum Physics", "college", "Wave-Particle Duality"),
-        ("World History", "middle school", "Ancient Civilizations"),
-    ]
-    
-    for topic, grade, chapter in test_cases:
-        print(f"\nTesting with topic='{topic}', grade='{grade}', chapter='{chapter}'")
-        try:
-            videos = get_video_resources(topic, grade, chapter)
-            print(f"Found {len(videos)} videos:")
-            for i, video in enumerate(videos, 1):
-                print(f"{i}. {video['title']} ({video['duration']})")
-                print(f"   Channel: {video['channel']}")
-                print(f"   URL: {video['url']}")
-        except Exception as e:
-            print(f"Error: {str(e)}")
-
-def test_video_api():
-    """Test the VideoResourcesAPI endpoint"""
-    print("\n=== Testing VideoResourcesAPI endpoint ===")
-    
-    test_cases = [
-        {"topic": "Machine Learning", "grade": "undergraduate", "chapter": "Neural Networks"},
-        {"topic": "Biology", "grade": "high school", "chapter": "Cell Structure"},
-        {"topic": "Art History", "grade": "college", "chapter": "Renaissance Art"},
-        # Edge cases
-        {"topic": "", "grade": "high school", "chapter": "Algebra"},  # Missing topic
-        {"topic": "Chemistry", "grade": "", "chapter": "Atomic Structure"},  # Missing grade
-        {"topic": "Physics", "grade": "college", "chapter": ""},  # Missing chapter
-    ]
-    
-    for data in test_cases:
-        print(f"\nTesting with data: {json.dumps(data)}")
-        try:
-            response = requests.post(
-                VIDEO_API_URL,
-                json=data,
-                headers={"Content-Type": "application/json"}
-            )
-            
-            print(f"Status Code: {response.status_code}")
-            print("Response:")
-            pprint(response.json())
-            
-        except Exception as e:
-            print(f"Request failed: {str(e)}")
-
-if __name__ == "__main__":
-    # Test the utility function directly
-    test_get_video_resources_directly()
-    
-    # Test the API endpoint
-    test_video_api()
-    
-    print("\nAll tests completed!")
-
-
-================================================
 FILE: core/tests.py
 ================================================
-from django.test import TestCase
+import os
+import requests
+import json
 
-# Create your tests here.
+BASE_URL = "http://localhost:8000"
 
+def get_auth_headers(firebase_uid):
+    """Generate headers with Firebase UID"""
+    return {'X-Firebase-UID': firebase_uid}
+
+def upload_and_process_pdf(pdf_path, firebase_uid):
+    """Upload and process a PDF file"""
+    print(f"\nUploading and processing PDF: {pdf_path}")
+    
+    if not os.path.exists(pdf_path):
+        print(f"Error: File not found at {pdf_path}")
+        return None
+
+    try:
+        with open(pdf_path, 'rb') as f:
+            files = {'pdf': (os.path.basename(pdf_path), f)}
+            headers = get_auth_headers(firebase_uid)
+            response = requests.post(
+                f"{BASE_URL}/api/process-pdf/",
+                files=files,
+                headers=headers
+            )
+        
+        if response.status_code == 200:
+            data = response.json()
+            print("PDF processed successfully!")
+            print(f"PDF ID: {data.get('data', {}).get('id')}")
+            print(f"File name: {data.get('data', {}).get('file_name')}")
+            return data.get('data', {}).get('id')
+        else:
+            print(f"Error processing PDF: {response.status_code}")
+            print(response.json())
+            return None
+            
+    except Exception as e:
+        print(f"Error uploading PDF: {str(e)}")
+        return None
+
+def list_user_pdfs(firebase_uid):
+    """List all PDFs for the authenticated user"""
+    try:
+        headers = get_auth_headers(firebase_uid)
+        response = requests.get(
+            f"{BASE_URL}/api/user/pdfs/",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            print("\nYour PDFs:")
+            for idx, pdf in enumerate(data.get('data', []), 1):
+                print(f"{idx}. {pdf['file_name']} (ID: {pdf['id']})")
+            return data.get('data', [])
+        else:
+            print(f"Error listing PDFs: {response.status_code}")
+            print(response.json())
+            return None
+            
+    except Exception as e:
+        print(f"Error listing PDFs: {str(e)}")
+        return None
+
+def ask_question(pdf_id, question, firebase_uid):
+    """Ask a question about the processed PDF"""
+    print(f"\nAsking question: {question}")
+    
+    try:
+        headers = get_auth_headers(firebase_uid)
+        response = requests.post(
+            f"{BASE_URL}/api/answer-question/",
+            json={
+                'pdf_id': pdf_id,
+                'question': question
+            },
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            print("\nAnswer received:")
+            print(json.dumps(data['data'], indent=2))
+            return data['data']
+        else:
+            print(f"Error answering question: {response.status_code}")
+            print(response.json())
+            return None
+            
+    except Exception as e:
+        print(f"Error asking question: {str(e)}")
+        return None
+
+def get_conversation_history(pdf_id, firebase_uid):
+    """Get conversation history for a PDF"""
+    try:
+        headers = get_auth_headers(firebase_uid)
+        response = requests.get(
+            f"{BASE_URL}/api/user/pdfs/{pdf_id}/conversations/",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            print("\nConversation history:")
+            for conv in data.get('data', []):
+                print(f"\nQ: {conv['question']}")
+                print(f"A: {conv['answer']['answer'][:100]}...")  # Show first 100 chars
+            return data.get('data', [])
+        else:
+            print(f"Error getting history: {response.status_code}")
+            print(response.json())
+            return None
+            
+    except Exception as e:
+        print(f"Error getting history: {str(e)}")
+        return None
+
+def delete_pdf(pdf_id, firebase_uid):
+    """Delete a PDF and its data"""
+    confirm = input(f"\nAre you sure you want to delete PDF {pdf_id}? (y/n): ").strip().lower()
+    if confirm != 'y':
+        print("Deletion cancelled")
+        return False
+        
+    try:
+        headers = get_auth_headers(firebase_uid)
+        response = requests.delete(
+            f"{BASE_URL}/api/user/pdfs/{pdf_id}/",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            print("PDF deleted successfully!")
+            return True
+        else:
+            print(f"Error deleting PDF: {response.status_code}")
+            print(response.json())
+            return False
+            
+    except Exception as e:
+        print(f"Error deleting PDF: {str(e)}")
+        return False
+
+def run_tests():
+    print("\n=== PDF Processing and QA Test ===")
+    print("This test will:")
+    print("1. Upload and process a PDF file")
+    print("2. List your PDFs")
+    print("3. Ask questions about the content")
+    print("4. View conversation history")
+    print("5. Delete PDF")
+
+    # Get Firebase UID from user
+    firebase_uid = "2IUpOTCYcLfJ1fLY8jItUCw11in1".strip()
+    if not firebase_uid:
+        print("Using default test UID")
+        firebase_uid = "test_uid_123"  # Should match a user in your database
+
+    # Step 1: Process PDF
+    pdf_path = r"C:\Users\Lenovo\Desktop\Code For Bharat\Current\AiTutor\book2.pdf".strip()
+    if not pdf_path or not os.path.exists(pdf_path):
+        print("Using default test PDF")
+        pdf_path = "test.pdf"  # Should exist in your directory
+
+    pdf_id = upload_and_process_pdf(pdf_path, firebase_uid)
+    if not pdf_id:
+        print("Failed to process PDF. Exiting test.")
+        return
+
+    # Step 2: List PDFs
+    list_user_pdfs(firebase_uid)
+
+    # Step 3: Ask questions
+    questions = [
+        input("\nEnter first question (or press Enter for default): ").strip() or "What is this document about?",
+        input("Enter second question (or press Enter for default): ").strip() or "Summarize the key points"
+    ]
+
+    for question in questions:
+        ask_question(pdf_id, question, firebase_uid)
+
+    # Step 4: View history
+    if input("\nView conversation history? (y/n): ").lower() == 'y':
+        get_conversation_history(pdf_id, firebase_uid)
+
+    # Step 5: Delete PDF
+    if input("\nDelete this PDF? (y/n): ").lower() == 'y':
+        delete_pdf(pdf_id, firebase_uid)
+
+    print("\nTest completed!")
+
+if __name__ == "__main__":
+    run_tests()
 
 
 ================================================
@@ -617,6 +1619,10 @@ FILE: core/utils.py
 ================================================
 import os
 from typing import List, Dict, TypedDict
+import time
+from datetime import timedelta
+from dotenv import load_dotenv
+from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_search import YoutubeSearch
 from tavily import TavilyClient
 import google.generativeai as genai
@@ -819,6 +1825,626 @@ if __name__ == "__main__":
         print(f"Error: {e}")
 
 
+
+
+
+
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Gemini
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel('gemini-2.5-flash')
+
+def get_video_id(video_url: str) -> str:
+    """Extract video ID from YouTube URL"""
+    if "v=" in video_url:
+        video_id = video_url.split("v=")[1].split("&")[0]
+    elif "youtu.be/" in video_url:
+        video_id = video_url.split("youtu.be/")[1].split("?")[0]
+    else:
+        video_id = video_url  # Assume it's just the ID
+    return video_id
+
+def download_youtube_transcript(video_id: str, languages: list = ['en']) -> tuple:
+    """Download transcript and return as formatted text with timestamps"""
+    try:
+        # Try to get transcript in each language until successful
+        transcript_list = None
+        for lang in languages:
+            try:
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang])
+                print(f"Found transcript in language: {lang}")
+                break
+            except:
+                continue
+        
+        if not transcript_list:
+            raise Exception("No transcript available for the video in the specified languages")
+        
+        # Format the transcript with timestamps
+        formatted_transcript = []
+        for entry in transcript_list:
+            start_time = entry['start']
+            text = entry['text']
+            formatted_transcript.append(
+                f"[{format_seconds_to_srt(start_time)}] {text}"
+            )
+        
+        return "\n".join(formatted_transcript), video_id
+    except Exception as e:
+        print(f"Error downloading transcript: {str(e)}")
+        return None, None
+
+def format_seconds_to_srt(seconds: float) -> str:
+    """Convert seconds to SRT time format (HH:MM:SS,mmm)"""
+    td = timedelta(seconds=seconds)
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    milliseconds = td.microseconds // 1000
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+def parse_transcript(transcript_text: str) -> list:
+    """Parse transcript text into a list of chunks with text and timestamps"""
+    chunks = []
+    lines = transcript_text.split('\n')
+    
+    for line in lines:
+        if line.startswith('[') and ']' in line:
+            time_part, text = line.split(']', 1)
+            time_str = time_part[1:]
+            start_time = srt_time_to_seconds(time_str)
+            
+            chunks.append({
+                'text': text.strip(),
+                'start': start_time,
+                'start_seconds': start_time,
+                'time_range': f"{time_str} --> {time_str}"  # Using same time for start/end
+            })
+    
+    return chunks
+
+def srt_time_to_seconds(time_str: str) -> float:
+    """Convert SRT time format (HH:MM:SS,mmm) to seconds"""
+    hh_mm_ss, mmm = time_str.split(',')
+    hh, mm, ss = hh_mm_ss.split(':')
+    return int(hh) * 3600 + int(mm) * 60 + int(ss) + int(mmm)/1000
+
+import re
+import json
+
+def generate_mcqs_from_transcript(transcript_chunks: list, video_id: str) -> tuple:
+    """Generate MCQ questions from transcript chunks using Gemini with YouTube links"""
+    transcript_with_timestamps = "\n\n".join(
+        f"[{chunk['time_range']} (or {int(chunk['start_seconds'])}s)] {chunk['text']}" 
+        for chunk in transcript_chunks
+    )
+
+    prompt = f"""
+    I will provide you with a video transcript that includes timestamps. 
+    Please generate 5-6 high quality multiple choice questions (MCQs) based on the key concepts and topics discussed in the video.
+
+    Requirements:
+    1. Questions should test understanding of important concepts, not trivial details
+    2. Each question must be directly answerable from the transcript
+    3. Include 4 plausible options for each question (a, b, c, d)
+    4. Mark the correct answer with an asterisk (*)
+    5. For each question, include:
+       - The original timestamp (HH:MM:SS,mmm)
+       - The time in seconds (for YouTube URL timestamp)
+       - A clickable YouTube URL with the timestamp (format: https://youtu.be/VIDEO_ID?t=SECONDSs)
+    6. Give proper explaination of the why correct answer is correct. And try to not include timestamps in explaination
+    7. Format exactly as shown.
+
+    Example format:
+    1. What is X?
+    a) One
+    b) Two
+    c) Three*
+    d) Four
+    Timestamp: [00:01:30,000]
+    Seconds: 90
+    Watch at: https://youtu.be/VIDEO_ID?t=90s
+    Explaination: This is because...
+    
+    Transcript with timestamps:
+    {transcript_with_timestamps}
+    """
+    try:
+        response = model.generate_content(prompt)
+        output = response.text.replace("VIDEO_ID", video_id)
+
+        # Parse the text into JSON
+        mcq_blocks = re.split(r"\n\d+\.\s", "\n" + output.strip())
+        mcq_list = []
+
+        for block in mcq_blocks[1:]:  # First is empty due to split
+            lines = block.strip().split('\n')
+            question = lines[0].strip()
+            options = {}
+            correct = ""
+            for line in lines:
+                match = re.match(r"([a-d])\)\s(.+?)(\*?)$", line.strip())
+                if match:
+                    opt = match.group(1)
+                    text = match.group(2).strip()
+                    is_correct = match.group(3) == '*'
+                    options[opt] = text
+                    if is_correct:
+                        correct = opt
+
+
+            timestamp_line = [l for l in lines if "Timestamp" in l][0]
+            seconds_line = [l for l in lines if "Seconds" in l][0]
+            url_line = [l for l in lines if "Watch at" in l][0]
+
+            # Find explanation block (everything after "Watch at")
+            explanation_index = lines.index(url_line) + 1
+            explanation = "\n".join(lines[explanation_index:]).strip()
+
+            mcq_list.append({
+                "question": question,
+                "options": options,
+                "correct_answer": correct,
+                "timestamp": timestamp_line.split(":", 1)[1].strip(" []"),
+                "seconds": int(seconds_line.split(":")[1].strip()),
+                "youtube_url": url_line.split(":", 1)[1].strip(),
+                "explanation": explanation
+            })
+
+        return output, mcq_list
+
+    except Exception as e:
+        print(f"Error generating MCQs: {str(e)}")
+        return None, None
+
+
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from datetime import timedelta
+from .yt_processor import YouTubeProcessor
+
+def format_seconds_to_srt(seconds: float) -> str:
+    td = timedelta(seconds=seconds)
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    milliseconds = td.microseconds // 1000
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+def srt_time_to_seconds(time_str: str) -> float:
+    hh_mm_ss, mmm = time_str.split(',')
+    hh, mm, ss = hh_mm_ss.split(':')
+    return int(hh) * 3600 + int(mm) * 60 + int(ss) + int(mmm)/1000
+
+def parse_transcript(transcript_text: str) -> list:
+    chunks = []
+    lines = transcript_text.split('\n')
+    for line in lines:
+        if line.startswith('[') and ']' in line:
+            time_part, text = line.split(']', 1)
+            time_str = time_part[1:]
+            start_time = srt_time_to_seconds(time_str)
+            chunks.append({
+                'text': text.strip(),
+                'start': start_time,
+                'start_seconds': start_time,
+                'time_range': f"{time_str} --> {time_str}"
+            })
+    return chunks
+
+def get_transcript_chunks_from_youtube(video_url: str, languages: list = ['en', 'hi']) -> list:
+    try:
+        yt = YouTubeProcessor()
+        video_id = yt.extract_video_id(video_url)
+        
+        # First try manual transcript
+        transcript = None
+        for lang in languages:
+            try:
+                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang])
+                print(f"[DEBUG] Found manual transcript in {lang}")
+                break
+            except Exception:
+                continue
+
+        # If not found, fallback to auto
+        if not transcript:
+            try:
+                all_transcripts = YouTubeTranscriptApi.list_transcripts(video_id)
+                for t in all_transcripts:
+                    if t.is_generated and t.language_code in languages:
+                        print(f"[DEBUG] Found auto-generated transcript in {t.language_code}")
+                        transcript = t.fetch()
+                        break
+            except Exception as e:
+                print(f"[ERROR] Transcript list failed: {e}")
+
+        if not transcript:
+            print(f"[ERROR] No transcript found for {video_id}")
+            return []
+
+        # Format transcript
+        formatted_transcript = []
+        for entry in transcript:
+            start = entry['start']
+            text = entry['text']
+            formatted_transcript.append(f"[{format_seconds_to_srt(start)}] {text}")
+
+        full_text = "\n".join(formatted_transcript)
+        return parse_transcript(full_text)
+
+    except (NoTranscriptFound, TranscriptsDisabled) as e:
+        print(f"[ERROR] Transcript not available: {e}")
+        return []
+    except Exception as e:
+        print(f"[ERROR] Unexpected error: {str(e)}")
+        return []
+
+
+================================================
+FILE: core/yt_processor.py
+================================================
+import os
+import re
+import json
+import hashlib
+import logging
+from typing import List, Dict, Optional, Union
+from yt_dlp import YoutubeDL
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import FAISS
+import google.generativeai as genai
+import requests
+
+# Disable yt-dlp logger to suppress ffmpeg warnings
+logging.getLogger('yt_dlp').setLevel(logging.ERROR)
+
+class YouTubeProcessor:
+    def __init__(self):
+        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        self.groq_model = "deepseek-r1-distill-llama-70b"
+        genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+        self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        self.supported_languages = ['en', 'hi']  # English and Hindi (English first)
+
+    @staticmethod
+    def clean_text(text: str) -> str:
+        """Clean text by removing empty or whitespace-only lines"""
+        lines = text.splitlines()
+        cleaned_lines = [line for line in lines if not re.match(r'^[_\W\s]{5,}$', line.strip())]
+        return "\n".join(cleaned_lines).strip()
+
+    @staticmethod
+    def generate_text_hash(text: str) -> str:
+        """Generate a short hash for text content"""
+        return hashlib.md5(text.encode('utf-8')).hexdigest()[:8]
+
+    @staticmethod
+    def extract_video_id(video_url: str) -> str:
+        """Extract YouTube video ID from URL.
+        Supports:
+        - https://www.youtube.com/watch?v=k4oWqYT6tjk
+        - https://youtu.be/k4oWqYT6tjk
+        - https://youtu.be/k4oWqYT6tjk?si=wdVFChAiQdIawmR1
+        - and similar variations
+        """
+        # Handle youtu.be URLs
+        if "youtu.be/" in video_url:
+            return video_url.split("youtu.be/")[1].split("?")[0].split("/")[0]
+        
+        # Handle standard YouTube URLs
+        if "v=" in video_url:
+            return video_url.split("v=")[1].split("&")[0]
+        
+        # If no pattern matches, return the original string (assuming it's just the ID)
+        return video_url
+
+    @staticmethod
+    def get_youtube_video_info(video_url: str) -> Dict:
+        """Get YouTube video metadata using yt-dlp"""
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'extract_flat': True,
+        }
+        try:
+            with YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                return {
+                    "title": info.get('title', ''),
+                    "description": info.get('description', ''),
+                    "thumbnail": info.get('thumbnail', ''),
+                    "duration": info.get('duration', 0),
+                    "view_count": info.get('view_count', 0),
+                    "upload_date": info.get('upload_date', '')
+                }
+        except Exception as e:
+            print(f"Warning: Couldn't get video info - {str(e)}")
+            return {
+                "title": "",
+                "description": "",
+                "thumbnail": ""
+            }
+
+    @staticmethod
+    def format_timestamp_url(video_url: str, timestamp: float) -> str:
+        """Format URL with timestamp parameter"""
+        video_id = YouTubeProcessor.extract_video_id(video_url)
+        return f"https://www.youtube.com/watch?v={video_id}&t={int(timestamp)}s"
+
+    def get_transcript(self, video_id: str) -> Union[List[Dict], None]:
+        """Get transcript with preference for English, then Hindi (including auto-generated), then None"""
+        # First try to get English transcript (manual or auto-generated)
+        try:
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            print("Found English transcript")
+            return transcript, 'en'
+        except Exception as e:
+            print(f"Couldn't find English transcript: {str(e)}")
+        
+        # If English not available, try Hindi (including auto-generated)
+        try:
+            # First try manual Hindi transcript
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
+            print("Found manual Hindi transcript")
+            return transcript, 'hi'
+        except NoTranscriptFound:
+            # If no manual Hindi transcript, try auto-generated Hindi
+            try:
+                transcript = YouTubeTranscriptApi.list_transcripts(video_id)
+                for t in transcript:
+                    if t.language_code == 'hi' and t.is_generated:
+                        print("Found auto-generated Hindi transcript")
+                        return t.fetch(), 'hi'
+            except Exception as e:
+                print(f"Couldn't find Hindi transcript (manual or auto-generated): {str(e)}")
+        except Exception as e:
+            print(f"Error while fetching Hindi transcript: {str(e)}")
+        
+        # If neither is available, return None
+        return None, None
+
+    def load_youtube_transcript(self, video_url: str) -> List[Document]:
+        """Load and process YouTube transcript into chunks with timestamps"""
+        video_id = self.extract_video_id(video_url)
+        print(f"\nProcessing YouTube video: {video_url}")
+        
+        # Get video metadata
+        video_info = self.get_youtube_video_info(video_url)
+        if video_info.get('title'):
+            print(f"Video Title: {video_info['title']}")
+        
+        # Get transcript with language preference
+        transcript, transcript_lang = self.get_transcript(video_id)
+        if not transcript:
+            raise Exception(f"No transcript available in supported languages: {self.supported_languages}")
+        
+        # Process transcript into chunks with metadata
+        full_text = " ".join([entry['text'] for entry in transcript])
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=200)
+        text_chunks = text_splitter.split_text(self.clean_text(full_text))
+        
+        chunks = []
+        for chunk_num, chunk_text in enumerate(text_chunks, start=1):
+            # Map chunk to timestamp range
+            start_pos = full_text.find(chunk_text)
+            end_pos = start_pos + len(chunk_text)
+            
+            start_time = 0
+            end_time = 0
+            current_pos = 0
+            matched_entries = []
+            
+            for entry in transcript:
+                entry_end = current_pos + len(entry['text']) + 1  # +1 for space
+                if current_pos <= end_pos and entry_end >= start_pos:
+                    matched_entries.append(entry)
+                current_pos = entry_end
+            
+            if matched_entries:
+                start_time = matched_entries[0]['start']
+                end_time = matched_entries[-1]['start'] + matched_entries[-1]['duration']
+            
+            chunks.append(Document(
+                page_content=chunk_text,
+                metadata={
+                    "source": self.format_timestamp_url(video_url, start_time),
+                    "thumbnail": video_info.get('thumbnail', ''),
+                    "chunk_id": f"c{chunk_num}",
+                    "timestamp": {
+                        "start": start_time,
+                        "end": end_time,
+                        "length": end_time - start_time
+                    },
+                    "preview": chunk_text[:50] + ("..." if len(chunk_text) > 50 else ""),
+                    "text_hash": self.generate_text_hash(chunk_text),
+                    "video_hash": self.generate_text_hash(full_text),
+                    "video_title": video_info.get('title', 'Unknown'),
+                    "video_id": video_id,
+                    "language": transcript_lang  # Add language metadata
+                }
+            ))
+        
+        print(f"Created {len(chunks)} text chunks from YouTube video")
+        return chunks
+
+    def create_vector_store(self, chunks: List[Document], store_name: str) -> FAISS:
+        """Create and save FAISS vector store from document chunks"""
+        print("Creating embeddings and vector store...")
+        vectorstore = FAISS.from_documents(chunks, self.embedding_model)
+        print(f"Vector store created with {vectorstore.index.ntotal} embeddings")
+        
+        # Save to specified path
+        store_path = os.path.join("vectorstores", store_name)
+        vectorstore.save_local(store_path)
+        print(f"Vector store saved at {store_path}")
+        return vectorstore
+
+    def load_vector_store(self, store_name: str) -> FAISS:
+        """Load existing vector store from disk"""
+        store_path = os.path.join("vectorstores", store_name)
+        return FAISS.load_local(
+            store_path,
+            self.embedding_model,
+            allow_dangerous_deserialization=True
+        )
+
+    def call_groq_llm(self, prompt: str, language: str = 'en') -> str:
+        """Call Groq LLM API with the given prompt"""
+        headers = {
+            "Authorization": f"Bearer {self.groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        system_message = {
+            "en": "You are a helpful AI assistant. Answer questions using the provided context.",
+            "hi": "आप एक सहायक AI सहायक हैं। प्रदान किए गए संदर्भ का उपयोग करके प्रश्नों का उत्तर दें।"
+        }.get(language, "en")
+        
+        payload = {
+            "model": self.groq_model,
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": system_message
+                },
+                {"role": "user", "content": prompt}
+            ]
+        }
+
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions", 
+            json=payload, 
+            headers=headers
+        )
+        if response.status_code != 200:
+            raise Exception(f"Groq LLM error: {response.status_code} - {response.text}")
+        
+        return response.json()["choices"][0]["message"]["content"]
+
+    def expand_query_with_llm(self, query: str, language: str = 'en') -> str:
+        """Expand short queries for better semantic search"""
+        prompt_templates = {
+            'en': """You are an expert assistant. The user query below is too short for accurate search.
+Please expand it into a more detailed version while preserving the original intent.
+
+Original Query: {query}
+
+Expanded Version:""",
+            'hi': """आप एक विशेषज्ञ सहायक हैं। नीचे दिया गया उपयोगकर्ता प्रश्न सटीक खोज के लिए बहुत छोटा है।
+कृपया इसे मूल इरादे को संरक्षित करते हुए अधिक विस्तृत संस्करण में विस्तारित करें।
+
+मूल प्रश्न: {query}
+
+विस्तारित संस्करण:"""
+        }
+        
+        prompt = prompt_templates.get(language, 'en').format(query=query)
+        return self.call_groq_llm(prompt, language)
+
+    def answer_question(self, vectorstore: FAISS, question: str) -> Dict:
+        """Answer question using vector store context. Always returns answer in English."""
+        # Detect language of the question (but we'll always answer in English)
+        question_lang = 'hi' if any('\u0900' <= char <= '\u097F' for char in question) else 'en'
+        
+        # Step 1: Expand the query (can be in original language)
+        expanded_query = self.expand_query_with_llm(question, question_lang)
+        
+        # Step 2: Semantic search on expanded query
+        similar_docs = vectorstore.max_marginal_relevance_search(
+            query=expanded_query, 
+            k=5, 
+            fetch_k=25
+        )
+
+        if not similar_docs:
+            return {
+                "answer": "No relevant context found in the video.",
+                "references": [],
+                "thinking_process": ""
+            }
+
+        # Prepare context for LLM (can be in any language)
+        full_context = "\n\n".join([doc.page_content for doc in similar_docs])
+        context_lang = similar_docs[0].metadata.get('language', 'en')
+
+        # Generate answer - always in English regardless of context language
+        prompt_template = """Analyze the question and provide:
+1. Your thinking process (marked with <thinking> tags)
+2. A detailed answer in English based strictly on the context
+3. Key points from each relevant chunk
+4. Include timestamps where this information appears in the video
+
+Question: {question}
+
+Context:
+{context}
+
+IMPORTANT: Your answer must be in English, even if the context is in another language.
+
+Format your response as:
+<thinking>Your analytical process here</thinking>
+<answer>Your structured answer in English here</answer>"""
+        
+        prompt = prompt_template.format(
+            question=question,
+            context=full_context
+        )
+        
+        # Force English response by setting language to 'en'
+        llm_response = self.call_groq_llm(prompt, 'en')
+        
+        # Extract thinking and answer parts
+        thinking_process = ""
+        answer = ""
+        try:
+            thinking_process = llm_response.split("<thinking>")[1].split("</thinking>")[0].strip()
+            answer = llm_response.split("<answer>")[1].split("</answer>")[0].strip()
+        except:
+            thinking_process = "The model did not provide a separate thinking process."
+            answer = llm_response
+
+        return {
+            "question": question,
+            "expanded_query": expanded_query,
+            "thinking_process": thinking_process,
+            "answer": answer,
+            "references": [
+                {
+                    "source": doc.metadata["source"],
+                    "thumbnail": doc.metadata["thumbnail"],
+                    "chunk_id": doc.metadata["chunk_id"],
+                    "timestamp": doc.metadata["timestamp"],
+                    "text": doc.page_content,
+                    "preview": doc.metadata["preview"],
+                    "video_title": doc.metadata.get("video_title", "Unknown"),
+                    "language": doc.metadata.get("language", "en")
+                } for doc in similar_docs
+            ],
+            "context_hash": self.generate_text_hash(full_context),
+            "language": "en"  # Always return English as the response language
+    }
+
+    def process_video(self, video_url: str, store_name: str) -> Dict:
+        """Full processing pipeline for a YouTube video"""
+        chunks = self.load_youtube_transcript(video_url)
+        vectorstore = self.create_vector_store(chunks, store_name)
+        video_info = self.get_youtube_video_info(video_url)
+        
+        return {
+            "vectorstore": vectorstore,
+            "video_info": video_info,
+            "chunks": chunks,
+            "store_name": store_name
+        }
+
+
+
 ================================================
 FILE: core/migrations/0001_initial.py
 ================================================
@@ -855,6 +2481,164 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
+        ),
+    ]
+
+
+
+================================================
+FILE: core/migrations/0002_alter_user_options_userpdf_pdfconversation.py
+================================================
+# Generated by Django 5.2.4 on 2025-07-07 08:47
+
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('core', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.AlterModelOptions(
+            name='user',
+            options={'verbose_name': 'User', 'verbose_name_plural': 'Users'},
+        ),
+        migrations.CreateModel(
+            name='UserPDF',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('file_name', models.CharField(max_length=255)),
+                ('vector_store', models.CharField(max_length=255)),
+                ('upload_time', models.DateTimeField(auto_now_add=True)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='pdfs', to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='PDFConversation',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('question', models.TextField()),
+                ('answer', models.TextField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('pdf', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='conversations', to='core.userpdf')),
+            ],
+            options={
+                'ordering': ['-created_at'],
+            },
+        ),
+    ]
+
+
+
+================================================
+FILE: core/migrations/0003_useryoutubevideo_youtubeconversation.py
+================================================
+# Generated by Django 5.1.6 on 2025-07-08 11:04
+
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('core', '0002_alter_user_options_userpdf_pdfconversation'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='UserYouTubeVideo',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('video_url', models.URLField()),
+                ('video_id', models.CharField(max_length=20)),
+                ('video_title', models.CharField(max_length=255)),
+                ('thumbnail_url', models.URLField()),
+                ('vector_store', models.CharField(max_length=255)),
+                ('upload_time', models.DateTimeField(auto_now_add=True)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='youtube_videos', to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='YouTubeConversation',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('question', models.TextField()),
+                ('answer', models.TextField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('video', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='conversations', to='core.useryoutubevideo')),
+            ],
+            options={
+                'ordering': ['-created_at'],
+            },
+        ),
+    ]
+
+
+
+================================================
+FILE: core/migrations/0004_chaptergeneration_chapterresource_and_more.py
+================================================
+# Generated by Django 5.2.4 on 2025-07-09 06:49
+
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('core', '0003_useryoutubevideo_youtubeconversation'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='ChapterGeneration',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('topic', models.CharField(max_length=255)),
+                ('grade', models.CharField(max_length=50)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='chapter_generations', to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ChapterResource',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255)),
+                ('position', models.IntegerField()),
+                ('generation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='chapters', to='core.chaptergeneration')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ChapterVideoResource',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.TextField()),
+                ('url', models.URLField()),
+                ('channel', models.CharField(max_length=255)),
+                ('duration', models.CharField(max_length=20)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('chapter', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='videos', to='core.chapterresource')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ChapterWebResource',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.TextField()),
+                ('url', models.URLField()),
+                ('source', models.CharField(max_length=255)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('chapter', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='websites', to='core.chapterresource')),
+            ],
         ),
     ]
 
@@ -1072,23 +2856,56 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 
+# Add to the bottom of settings.py
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
+
+# Create vectorstores directory
+VECTORSTORES_DIR = os.path.join(BASE_DIR, 'vectorstores')
+os.makedirs(VECTORSTORES_DIR, exist_ok=True)
+
+
 ================================================
 FILE: decentral_tutor/urls.py
 ================================================
 from django.contrib import admin
 from django.urls import path, include
-from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI  # Remove WalletAPI import
+from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI, WebResourcesAPI, PDFQAAPI, QuestionAnswerAPI, UserPDFListAPI, DeletePDFAPI, PDFConversationHistoryAPI, YouTubeQuestionAPI, YouTubeVideoAPI, YouTubeVideoListAPI, YouTubeVideoDeleteAPI, ChapterGenerationHistoryAPI, ChapterResourcesAPI, DeleteChapterGenerationAPI
 from django.views.generic import TemplateView
 from core.api import get_csrf_token
+from core.api import MultiVideoMCQAPI
 
 urlpatterns = [
+    # Existing URLs
     path('admin/', admin.site.urls),
     path('api/login/', FirebaseLoginAPI.as_view(), name='api_login'),
     path('api/dashboard/', DashboardAPI.as_view(), name='api_dashboard'),
+    
+    # Chapter-related URLs
     path('api/chapters/', ChapterAPI.as_view(), name='api_chapters'),
+    path('api/chapters/history/', ChapterGenerationHistoryAPI.as_view(), name='api_chapter_history'),
+    path('api/chapters/<int:generation_id>/resources/', ChapterResourcesAPI.as_view(), name='api_chapter_resources'),
     path('api/videos/', VideoResourcesAPI.as_view(), name='api_videos'),
+    path('api/websites/', WebResourcesAPI.as_view(), name='api_websites'),
+    path('api/chapters/<int:generation_id>/', DeleteChapterGenerationAPI.as_view(), name='api_delete_chapter_generation'),
+    path("api/generate-multi-mcqs/", MultiVideoMCQAPI.as_view(), name="generate_multi_mcqs"),
+
+    
+    # PDF-related URLs
+    path('api/process-pdf/', PDFQAAPI.as_view(), name='api_process_pdf'),
+    path('api/answer-question/', QuestionAnswerAPI.as_view(), name='api_answer_question'),
+    path('api/user/pdfs/', UserPDFListAPI.as_view(), name='api_user_pdfs'),
+    path('api/user/pdfs/<int:pdf_id>/', DeletePDFAPI.as_view(), name='api_delete_pdf'),
+    path('api/user/pdfs/<int:pdf_id>/conversations/', PDFConversationHistoryAPI.as_view(), name='api_pdf_conversations'),
+    
+    # YouTube-related URLs
+    path('api/process-youtube/', YouTubeVideoAPI.as_view(), name='api_process_youtube'),
+    path('api/ask-youtube-question/', YouTubeQuestionAPI.as_view(), name='api_ask_youtube_question'),
+    path('api/user/youtube-videos/', YouTubeVideoListAPI.as_view(), name='api_user_youtube_videos'),
+    path('api/user/youtube-videos/<int:video_id>/', YouTubeVideoDeleteAPI.as_view(), name='api_delete_youtube_video'),
+    
+    # CSRF and frontend
     path('api/csrf/', get_csrf_token, name='api_csrf'),
-    # Remove wallet path completely
     path('', TemplateView.as_view(template_name='index.html')),
     path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]
@@ -1203,13 +3020,18 @@ FILE: frontend/package.json
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-pdf-viewer/core": "^3.12.0",
+    "@react-pdf-viewer/default-layout": "^3.12.0",
+    "@react-pdf-viewer/highlight": "^3.12.0",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
     "firebase": "^11.10.0",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^6.x.x",
+    "react-youtube": "^10.1.0",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
@@ -1276,22 +3098,1879 @@ FILE: frontend/src/index.css
 @import "tailwindcss";
 
 
+
+
+
 ================================================
 FILE: frontend/src/main.jsx
 ================================================
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import './index.css'
-import App from './App.jsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import "./index.css";
+import App from "./App.jsx";
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
-  </StrictMode>,
-)
+    <BrowserRouter>
+        <App />
+    
+    </BrowserRouter>
+  </StrictMode>
+);
+
+
+
+================================================
+FILE: frontend/src/components/Model1history.jsx
+================================================
+import React, { useEffect, useState, useContext } from "react";
+import {
+  fetchChapterGenerationHistory,
+  deleteChapterGeneration,
+} from "../utils/contentScan";
+import { Clock, BookOpen, Calendar, Hash, Trash2 } from "lucide-react";
+import { fetchChapterResources } from "../utils/contentScan";
+
+function Model1history( {setFromHistory,setChapterHistory}) {
+  const [history, setHistory] = useState([]);
+  const loadHistory = async () => {
+    try {
+      const data = await fetchChapterGenerationHistory();
+      setHistory(data);
+    } catch (err) {
+      console.error("Failed to load history:", err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this generation?"))
+      return;
+    try {
+      await deleteChapterGeneration(id);
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Failed to delete. Try again.");
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+
+const handleClick = async (item) => {
+  console.log("Clicked ID:", item.id);
+  try {
+    const resources = await fetchChapterResources(item.id); // ðŸ‘ˆ API call
+    setChapterHistory(resources); // ðŸ‘ˆ Update state with fetched resources
+    setFromHistory(true); // ðŸ‘ˆ Set fromHistory to true
+
+    console.log("Fetched resources:", resources);
+  } catch (err) {
+    console.error("Failed to fetch chapter resources:", err);
+    alert("Failed to load resources for this chapter. Try again.");
+  }
+};
+
+
+
+  return (
+    <div className="mt-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg">
+          <Clock className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            Chapter Generation History
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            View your previously generated chapter outlines
+          </p>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6">
+        {history.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-500 dark:text-slate-400 text-lg">
+              No history available yet.
+            </p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">
+              Generate your first chapter outline to see it here.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {history.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleClick(item)}
+                className="cursor-pointer p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 mb-2">
+                      {item.topic}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>Grade: {item.grade}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Hash className="w-4 h-4" />
+                        <span>{item.chapter_count} chapters</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          {new Date(item.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                    className="p-2 text-red-500 hover:text-red-700 transition"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Model1history;
+
+
+
+================================================
+FILE: frontend/src/components/Model2history.jsx
+================================================
+import React, { useState, useEffect } from "react";
+import { fetchUserPDFList } from "../utils/contentScan";
+import { History, FileText, Youtube, Clock, MessageSquare } from "lucide-react";
+import { deletePdf } from "../utils/contentScan"; // Import the delete function
+import { fetchYouTubeHistory, deleteYoutubeVideo } from "../utils/contentScan"; // Import YouTube functions
+
+
+// Custom scrollbar styles
+const scrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #10b981, #14b8a6);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #059669, #0d9488);
+  }
+  
+  .dark .custom-scrollbar::-webkit-scrollbar-track {
+    background: #334155;
+  }
+  
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #34d399, #5eead4);
+  }
+  
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #6ee7b7, #7dd3fc);
+  }
+`;
+
+// Inject styles
+if (typeof document !== "undefined") {
+  const styleElement = document.createElement("style");
+  styleElement.textContent = scrollbarStyles;
+  document.head.appendChild(styleElement);
+}
+
+const Model2history = () => {
+  const [activeTab, setActiveTab] = useState("pdf"); // 'pdf' or 'youtube'
+  const [pdfHistory, setPdfHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [ytHistory, setYtHistory] = useState([]);
+
+  // Fetch PDF upload history
+  useEffect(() => {
+    if (activeTab === "pdf") {
+      setLoading(true);
+      fetchUserPDFList()
+        .then((data) => setPdfHistory(data))
+        .catch((err) => console.error("Failed to fetch PDF history", err))
+        .finally(() => setLoading(false));
+    }
+  }, [activeTab]);
+
+  const handleDelete = async (pdfId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this PDF?"
+    );
+    if (!confirmed) return;
+
+    const result = await deletePdf(pdfId);
+    if (result.success) {
+      // Remove the deleted PDF from local state
+      setPdfHistory((prev) => prev.filter((pdf) => pdf.id !== pdfId));
+      alert("PDF deleted successfully.");
+    } else {
+      alert("Failed to delete PDF: " + result.message);
+    }
+  };
+  useEffect(() => {
+    setLoading(true);
+    if (activeTab === "pdf") {
+      fetchUserPDFList()
+        .then((data) => setPdfHistory(data))
+        .catch((err) => console.error("Failed to fetch PDF history", err))
+        .finally(() => setLoading(false));
+    } else if (activeTab === "youtube") {
+      fetchYouTubeHistory()
+        .then((data) => setYtHistory(data))
+        .catch((err) => console.error("Failed to fetch YouTube history", err))
+        .finally(() => setLoading(false));
+    }
+  }, [activeTab]);
+
+  const handleDeleteYT = async (videoId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this YouTube video?"
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteYoutubeVideo(videoId);
+      setYtHistory((prev) => prev.filter((video) => video.id !== videoId));
+      alert("YouTube video deleted successfully.");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  return (
+    <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg">
+          <History className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            Analysis History
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            View your previously analyzed content
+          </p>
+        </div>
+      </div>
+
+      {/* Toggle Buttons */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button
+          onClick={() => setActiveTab("pdf")}
+          className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+            activeTab === "pdf"
+              ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+              : "border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <FileText
+              className={`w-5 h-5 ${
+                activeTab === "pdf"
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-slate-500 dark:text-slate-400"
+              }`}
+            />
+            <div>
+              <h3
+                className={`font-medium ${
+                  activeTab === "pdf"
+                    ? "text-green-900 dark:text-green-100"
+                    : "text-slate-900 dark:text-slate-100"
+                }`}
+              >
+                PDF History
+              </h3>
+              <p
+                className={`text-sm ${
+                  activeTab === "pdf"
+                    ? "text-green-700 dark:text-green-300"
+                    : "text-slate-600 dark:text-slate-400"
+                }`}
+              >
+                Previously analyzed documents
+              </p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("youtube")}
+          className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+            activeTab === "youtube"
+              ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+              : "border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Youtube
+              className={`w-5 h-5 ${
+                activeTab === "youtube"
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-slate-500 dark:text-slate-400"
+              }`}
+            />
+            <div>
+              <h3
+                className={`font-medium ${
+                  activeTab === "youtube"
+                    ? "text-green-900 dark:text-green-100"
+                    : "text-slate-900 dark:text-slate-100"
+                }`}
+              >
+                YouTube History
+              </h3>
+              <p
+                className={`text-sm ${
+                  activeTab === "youtube"
+                    ? "text-green-700 dark:text-green-300"
+                    : "text-slate-600 dark:text-slate-400"
+                }`}
+              >
+                Previously analyzed videos
+              </p>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* History Content */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            <span className="ml-2 text-slate-600 dark:text-slate-400">
+              Loading...
+            </span>
+          </div>
+        ) : activeTab === "pdf" ? (
+          pdfHistory.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-500 dark:text-slate-400">
+                No PDFs uploaded yet.
+              </p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
+                Upload your first PDF to get started
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-72 overflow-y-auto custom-scrollbar">
+              {pdfHistory.map((pdf) => (
+                <div
+                  key={pdf.id}
+                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {pdf.file_name}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>
+                            {new Date(pdf.upload_time).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3" />
+                          <span>
+                            {pdf.conversation_count} chat
+                            {pdf.conversation_count !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="ml-4 flex flex-col items-end gap-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                        {pdf.conversation_count} chat
+                        {pdf.conversation_count !== 1 ? "s" : ""}
+                      </span>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDelete(pdf.id)}
+                        className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : ytHistory.length === 0 ? (
+          <div className="text-center py-8">
+            <Youtube className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-500 dark:text-slate-400">
+              No YouTube videos analyzed yet.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-72 overflow-y-auto custom-scrollbar">
+            {ytHistory.map((video) => (
+              <div
+                key={video.id}
+                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <img
+                        src={video.thumbnail_url}
+                        alt="thumbnail"
+                        className="w-16 h-10 object-cover rounded-sm"
+                      />
+                      <div>
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {video.video_title}
+                        </h4>
+                        <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {new Date(video.upload_time).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="w-3 h-3" />
+                            <span>
+                              {video.conversation_count} chat
+                              {video.conversation_count !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ml-4 flex flex-col items-end gap-2">
+                    <a
+                      href={`https://youtube.com/watch?v=${video.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Watch
+                    </a>
+                    <button
+                      onClick={() => handleDeleteYT(video.id)}
+                      className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default Model2history;
+
+
+
+================================================
+FILE: frontend/src/components/Model2results.jsx
+================================================
+import React from "react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Link as LinkIcon,
+  FileText,
+} from "lucide-react";
+
+import YouTube from "react-youtube";
+import ReactMarkdown from "react-markdown";
+import { Worker, Viewer } from "@react-pdf-viewer/core";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
+import { highlightPlugin } from "@react-pdf-viewer/highlight";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+import "@react-pdf-viewer/highlight/lib/styles/index.css";
+import { useState, useMemo } from "react";
+import { askPdfQuestion, askYoutubeQuestion } from "../utils/contentScan"; // Adjust the import path as needed
+
+const API_BASE = import.meta.env.VITE_API_BASE;
+function Model2results({
+  file,
+  url,
+  mode,
+  isLoading,
+  setIsLoading,
+  onNewScan,
+  viewerRef,
+  fileUrl,
+  response,
+}) {
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
+  const highlightPluginInstance = highlightPlugin();
+
+  const { jumpToHighlightArea } = highlightPluginInstance;
+  const [player, setPlayer] = useState(null);
+
+  const [question, setQuestion] = useState("");
+  const [videoStartTime, setVideoStartTime] = useState(0);
+
+  const [messages, setMessages] = useState([
+    {
+      type: "ai",
+      text: `Hello! I've analyzed your ${
+        mode === "pdf" ? "PDF document" : "YouTube video"
+      }. What would you like to know about it?`,
+    },
+  ]);
+  console.log(response);
+
+  const handleSend = async () => {
+    if (!question.trim()) return;
+
+    const userMessage = { type: "user", text: question };
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      let res;
+      if (mode === "pdf") {
+        const pdfId = response?.data?.id;
+        res = await askPdfQuestion(pdfId, question);
+      } else if (mode === "yt") {
+        const videoId = response?.data?.id;
+        res = await askYoutubeQuestion(videoId, question);
+        console.log("Response from YouTube question:", res);
+      }
+
+      const aiAnswer = res?.data?.answer || "No response from server.";
+      const refs = res?.data?.references || [];
+
+      setMessages((prev) => [
+        ...prev,
+        { type: "ai", text: aiAnswer },
+        ...(refs.length > 0
+          ? [{ type: "reference-list", references: refs }]
+          : []),
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { type: "ai", text: "⚠️ Error getting answer." },
+      ]);
+    } finally {
+      setIsLoading(false);
+      setQuestion("");
+    }
+  };
+  // Function to extract YouTube video ID from URL
+  function getYoutubeVideoId(url) {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname === "youtu.be") {
+        return urlObj.pathname.slice(1);
+      } else if (urlObj.hostname.includes("youtube.com")) {
+        return urlObj.searchParams.get("v");
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+  // Converts timestamp string like "01:30" or "00:01:30" to seconds
+  function timeToSeconds(timeStr) {
+    const parts = timeStr.split(":").map(Number).reverse();
+    return parts.reduce(
+      (total, part, index) => total + part * Math.pow(60, index),
+      0
+    );
+  }
+
+  const handleSeek = (timeInSeconds) => {
+    if (player) {
+      player.seekTo(timeInSeconds, true);
+      player.playVideo();
+    }
+  };
+
+  return (
+    <section className="w-auto h-auto bg-white dark:bg-slate-800 overflow-hidden">
+      {/* Header with Back Button */}
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg">
+            <CheckCircle className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              Analysis Results
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              {mode === "pdf" ? `${file?.name}` : "YouTube video analysis"}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onNewScan}
+          className="flex items-center gap-2 px-3 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          New Scan
+        </button>
+      </div>
+
+      {/* Two-Panel Layout */}
+      <div className="flex h-[calc(100vh-80px)] min-h-0">
+        {/* Left Panel - Chat Section */}
+        <div className="flex flex-col h-full w-3/5 min-w-0 border-r border-slate-200 dark:border-slate-700">
+          {/* Chat Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+            <div className="space-y-4">
+              {messages.map((msg, index) => {
+                if (msg.type === "reference-list") {
+                  return (
+                    <div
+                      key={index}
+                      className="text-sm text-slate-800 dark:text-slate-100"
+                    >
+                      <div className="mt-3 space-y-2">
+                        {msg.references.map((ref) => (
+                          <button
+                            key={ref.chunk_id}
+                            onClick={() => {
+                              if (mode === "pdf") {
+                                jumpToHighlightArea({
+                                  pageIndex: ref.page - 2,
+                                });
+                              } else if (
+                                mode === "yt" &&
+                                ref.timestamp?.start
+                              ) {
+                                const startTime =
+                                  typeof ref.timestamp.start === "string"
+                                    ? timeToSeconds(ref.timestamp.start)
+                                    : ref.timestamp.start;
+
+                                handleSeek(startTime);
+                              }
+                            }}
+                            className="block text-blue-600 dark:text-blue-400 hover:underline text-left w-full break-words p-2 rounded bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                          >
+                            {mode === "pdf"
+                              ? `🔗 Page ${ref.page}: ${ref.preview.slice(
+                                  0,
+                                  120
+                                )}...`
+                              : `⏱️ Timestamp: ${
+                                  ref.timestamp.start
+                                }s – ${ref.text.slice(0, 120)}...`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex ${
+                      msg.type === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`${
+                        msg.type === "user"
+                          ? "bg-green-100 dark:bg-green-700"
+                          : "bg-slate-100 dark:bg-slate-700"
+                      } rounded-lg p-4 max-w-[85%] min-w-0`}
+                    >
+                      {msg.type === "ai" ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-900 dark:text-slate-100 break-words overflow-x-auto">
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-900 dark:text-slate-100 break-words">
+                          {msg.text}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 max-w-[85%] min-w-0">
+                    <p className="text-sm text-slate-900 dark:text-slate-100">
+                      Thinking...
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Chat Input */}
+          <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder="Ask a question about the content..."
+                className="flex-1 min-w-0 p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm"
+              />
+              <button
+                onClick={handleSend}
+                disabled={isLoading}
+                className="flex-shrink-0 px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Content Display */}
+        <div className="w-2/5 flex flex-col min-w-0">
+          {/* Content Display Area */}
+          <div className="flex-1 overflow-hidden min-h-0">
+            {mode === "pdf" ? (
+              <div className="h-full bg-slate-100 dark:bg-slate-700 overflow-y-auto">
+                {file ? (
+                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                    <div className="h-full overflow-y-auto bg-white dark:bg-slate-800">
+                      <Viewer
+                        ref={viewerRef}
+                        fileUrl={fileUrl}
+                        plugins={[
+                          defaultLayoutPluginInstance,
+                          highlightPluginInstance,
+                        ]}
+                        renderLoader={(percentages) => (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mb-2"></div>
+                              <div className="text-sm text-slate-500 dark:text-slate-400">
+                                Loading PDF... {Math.round(percentages)}%
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        theme={{
+                          theme: "auto", // This will auto-detect based on your page theme
+                        }}
+                      />
+                    </div>
+                  </Worker>
+                ) : (
+                  <div className="text-center text-slate-500 dark:text-slate-400 h-full flex items-center justify-center">
+                    <div>
+                      <svg
+                        className="w-12 h-12 mx-auto mb-2 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      <p>PDF not loaded</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="h-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                <div className="w-full h-full">
+                  {url ? (
+                    <YouTube
+                      videoId={getYoutubeVideoId(url)}
+                      opts={{
+                        width: "100%",
+                        height: "100%",
+                        playerVars: {
+                          autoplay: 1,
+                        },
+                      }}
+                      onReady={(e) => setPlayer(e.target)}
+                      className="w-full h-full"
+                    />
+                  ) : (
+                    <div className="text-center text-slate-500 dark:text-slate-400">
+                      No video URL provided.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default Model2results;
+
+
+================================================
+FILE: frontend/src/components/MultiMCQForm.jsx
+================================================
+// components/MultiMCQForm.jsx
+import React, { useState } from "react";
+import { generateMultiVideoMCQs } from "../utils/api";
+
+const MultiMCQForm = () => {
+  const [videoUrls, setVideoUrls] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState("");
+
+  const handleChange = (index, value) => {
+    const updated = [...videoUrls];
+    updated[index] = value;
+    setVideoUrls(updated);
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    setResults(null);
+
+    try {
+      const data = await generateMultiVideoMCQs(videoUrls);
+      setResults(data);
+    } catch (err) {
+      setError("Could not generate MCQs. Please check your video URLs.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-4 max-w-xl mx-auto">
+      <h2 className="text-xl font-bold mb-2">Enter 4 YouTube Video URLs</h2>
+      {videoUrls.map((url, i) => (
+        <input
+          key={i}
+          className="w-full mb-2 p-2 border rounded"
+          placeholder={`Video URL ${i + 1}`}
+          value={url}
+          onChange={(e) => handleChange(i, e.target.value)}
+        />
+      ))}
+
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        {loading ? "Generating..." : "Generate MCQs"}
+      </button>
+
+      {error && <p className="text-red-600 mt-4">{error}</p>}
+
+      {results && (
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2">Generated MCQs ({results.total_questions})</h3>
+          <pre className="bg-gray-100 p-2 rounded overflow-auto max-h-96">{JSON.stringify(results.questions, null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MultiMCQForm;
+
+
+
+================================================
+FILE: frontend/src/components/Resources.jsx
+================================================
+import React, { useState, useEffect, useContext } from "react";
+import axios from "axios";
+import {
+  BookOpen,
+  Sparkles,
+  GraduationCap,
+  AlertCircle,
+  Play,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
+import ResultsView from "./ResultsView"; // Adjust the import path
+import { getFirebaseIdToken } from "../utils/firebase"; // Adjust the import path
+import Model1history from "./Model1history";
+import { AuthContext } from "../contexts/AuthContext";
+import { getCsrfToken } from "../utils/api"; // Adjust the import path
+
+
+function Resources() {
+  const [topic, setTopic] = useState("");
+  const [grade, setGrade] = useState("");
+  const [chapters, setChapters] = useState([]);
+  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [videos, setVideos] = useState([]);
+  const [websites, setWebsites] = useState([]);
+  const [activeTab, setActiveTab] = useState("form");
+  const [chapterHistory, setChapterHistory] = useState([]);
+  const [fromHistory, setFromHistory] = useState(false);
+
+  const gradeOptions = [
+    { value: "school", label: "Elementary School", icon: "ðŸŽ’" },
+    { value: "high school", label: "High School", icon: "ðŸ“š" },
+    { value: "college", label: "College", icon: "ðŸŽ“" },
+    { value: "phd", label: "PhD Level", icon: "ðŸ”¬" },
+  ];
+
+  const API_BASE = import.meta.env.VITE_API_BASE;
+
+  const generateChapters = async () => {
+    if (!topic.trim() || !grade.trim()) {
+      setFormError("Please fill in both the topic and grade.");
+      setChapters([]);
+      return;
+    }
+
+
+    setLoading(true);
+    try {
+      const csrfToken = await getCsrfToken();
+      const firebaseIdToken = await getFirebaseIdToken();
+
+      const res = await axios.post(
+        `${API_BASE}/chapters/`,
+        { topic, grade },
+        {
+          withCredentials: true,
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${firebaseIdToken}`, // Include Firebase ID token if needed
+          },
+        }
+      );
+      console.log("Response from server:", res.data);
+
+      setChapters(res.data?.data?.chapters || []);
+      setError("");
+      setFormError("");
+      setActiveTab("results");
+    } catch (err) {
+      setError(err.response?.data?.error || "Something went wrong");
+      setChapters([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchVideoResources = async (chapter) => {
+    if (!topic?.trim()) return setError("Topic cannot be blank");
+    if (!grade?.trim()) return setError("Grade cannot be blank");
+    if (!chapter) return setError("Chapter cannot be blank");
+
+    try {
+      setError("");
+      const idToken = await getFirebaseIdToken();
+      const csrfToken = await getCsrfToken();
+
+      const res = await axios.post(
+        `${API_BASE}/videos/`,
+        { topic, grade, chapter },
+        {
+          withCredentials: true,
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`, // Include Firebase ID token if needed
+          },
+        }
+      );
+
+      console.log("Video response:", res.data.data.videos);
+      setVideos(res.data?.data?.videos || []);
+    } catch (err) {
+      const backendMsg = err?.response?.data?.error;
+      setError(backendMsg || err.message || "Failed to fetch videos");
+      setVideos([]);
+    }
+  };
+
+  const fetchWebResources = async ({ topic, grade, chapter }) => {
+    const csrfToken = await getCsrfToken();
+    const idToken = await getFirebaseIdToken();
+    const res = await axios.post(
+      `${API_BASE}/websites/`,
+      { topic, grade, chapter },
+      {
+        withCredentials: true,
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`, // Include Firebase ID token if needed
+        },
+      }
+    );
+
+    return res.data?.data?.websites || [];
+  };
+
+ useEffect(() => {
+  if (fromHistory) {
+    const chapterNames = chapterHistory.map((item) => item.name);
+    setChapters(chapterNames);  // âœ… now chapters is just an array of strings
+    console.log("Chapter names:", chapterNames);
+
+    setActiveTab("results");
+  }
+}, [fromHistory, chapterHistory]);
+
+
+  return (
+    <div className="space-y-6">
+      {/* ---------------- TABÂ 1 : INPUT FORM ---------------- */}
+      {activeTab === "form" && (
+        <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6 space-y-6">
+          {/* header */}
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                AI Chapter Generator
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400">
+                Generate comprehensive chapter outlines for any topic
+              </p>
+            </div>
+          </div>
+
+          {/* Input Form */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Topic Input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Topic
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Enter your topic (e.g., Machine Learning, History of Rome)"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                />
+                <Sparkles className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+              </div>
+            </div>
+
+            {/* Grade Level Select */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Academic Level
+              </label>
+              <div className="relative">
+                <select
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                  className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 appearance-none cursor-pointer"
+                >
+                  <option value="">Select academic level</option>
+                  {gradeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.icon} {option.label}
+                    </option>
+                  ))}
+                </select>
+                <GraduationCap className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                <div className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* error and button â€¦ */}
+          {formError && (
+            <div className="mt-4 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <p className="text-red-700 dark:text-red-400 text-sm">
+                {formError}
+              </p>
+            </div>
+          )}
+          <button
+            onClick={generateChapters}
+            disabled={loading}
+            className={`mt-6 w-full font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                      ${
+                        loading
+                          ? "bg-slate-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      } text-white`}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Generating Chapters...</span>
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Generate Chapters
+              </span>
+            )}
+          </button>
+          <Model1history 
+          setFromHistory={setFromHistory}
+          setChapterHistory={setChapterHistory}
+          />
+        </section>
+      )}
+
+      {/* ---------------- TABÂ 2 : RESULTS ---------------- */}
+      {activeTab === "results" && (
+        <ResultsView
+          chapters={chapters}
+          videos={videos}
+          websites={websites}
+          loading={loading}
+          error={error}
+          setError={setError}
+          topic={topic}
+          fetchVideoResources={fetchVideoResources}
+          fetchWebResources={fetchWebResources}
+          grade={grade}
+          setVideos={setVideos}
+          setWebsites={setWebsites}
+          setLoading={setLoading}
+          fromHistory={fromHistory}
+          chapterHistory ={chapterHistory}
+          onBack={() => setActiveTab("form")}
+        />
+      )}
+    </div>
+  );
+}
+
+export default Resources;
+
+
+
+================================================
+FILE: frontend/src/components/ResultsView.jsx
+================================================
+import React from "react";
+import { useState } from "react";
+import {
+  BookOpen,
+  ExternalLink,
+  Play,
+  AlertCircle,
+  Loader2,
+  ArrowLeft,
+} from "lucide-react";
+import {generateMultiVideoMCQs} from "../utils/contentScan"; // Import the function to generate quizzes
+
+function ResultsView({
+  chapters,
+  videos,
+  websites,
+  loading,
+  error,
+  topic,
+  grade,
+  fromHistory,
+  setError,
+  fetchVideoResources,
+  fetchWebResources,
+  setLoading,
+  setVideos,
+  setWebsites,
+  activeTab,
+  setActiveTab,
+  chapterHistory,
+  onBack,
+}) {
+  const handleChapterClick = async (e) => {
+    const chapter = e.target.textContent; // More reliable than innerHTML
+
+    if (!chapter) return setError("Chapter cannot be blank");
+
+    setVideos([]);
+    setWebsites([]);
+    setError("");
+
+    if (fromHistory) {
+      // ✅ Find chapter object by matching name
+      const found = chapterHistory.find((item) => item.name === chapter);
+
+      if (found) {
+        setVideos(found.videos || []);
+        setWebsites(found.websites || []);
+      } else {
+        setError("Chapter not found in history.");
+      }
+
+      return; // ✅ Skip API calls
+    }
+    if (!topic?.trim()) return setError("Topic cannot be blank");
+    if (!grade?.trim()) return setError("Grade cannot be blank");
+
+    // 🔁 Live fetch from backend if not from history
+    try {
+      setLoading(true);
+      await fetchVideoResources(chapter);
+      const websitesArr = await fetchWebResources({ topic, grade, chapter });
+      setWebsites(websitesArr);
+    } catch (err) {
+      const backendMsg = err?.response?.data?.error;
+      setError(backendMsg || err.message || "Failed to fetch resources");
+      setVideos([]);
+      setWebsites([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const  handleGenerateQuiz = async() => {
+  console.log("Generating quiz for these videos:", videos);
+  const res = await generateMultiVideoMCQs(videos);
+  if (res.error) {
+    setError(res.error);
+  } else {
+    console.log("Quiz generated successfully:", res);
+  }
+
+};
+
+
+  return (
+    <div className="space-y-6">
+      {/* Back button */}
+      <button
+        onClick={onBack}
+        className="inline-flex items-center gap-2 text-blue-600 hover:underline"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to input
+      </button>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+          <p className="text-red-700 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
+      {/* Generated Chapters */}
+      {chapters.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <BookOpen className="w-5 h-5 text-blue-600" />
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              Generated Chapters
+            </h3>
+            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+              {chapters.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {chapters.map((chapter, i) => (
+              <div
+                key={i}
+                className="group bg-slate-50 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500 rounded-lg p-4 transition-all duration-200 cursor-pointer"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1">
+                    <h4
+                      onClick={handleChapterClick}
+                      className="text-slate-900 dark:text-slate-100 font-medium group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors"
+                    >
+                      {chapter}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center p-8">
+          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Loading resources...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Resources Grid */}
+      {(videos.length > 0 || websites.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Videos */}
+          {videos.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Play className="w-5 h-5 text-red-500" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  Videos
+                </h3>
+                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
+                  {videos.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {videos.map((v, i) => (
+                  <a
+                    key={i}
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition-all duration-200 border border-slate-200 dark:border-slate-600 hover:border-red-300 dark:hover:border-red-500"
+                  >
+                    <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Play className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-900 dark:text-slate-100 font-medium truncate">
+                        {v.title}
+                      </p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="col-span-full flex justify-center mt-4">
+            <button
+              onClick={handleGenerateQuiz}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 rounded-lg transition duration-200"
+            >
+              Generate Quiz
+            </button>
+          </div>
+
+          {/* Websites */}
+          {websites.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <ExternalLink className="w-5 h-5 text-green-500" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  Websites
+                </h3>
+                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+                  {websites.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {websites.map((w, i) => (
+                  <a
+                    key={i}
+                    href={w.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 hover:bg-green-50 dark:hover:bg-slate-600 rounded-lg transition-all duration-200 border border-slate-200 dark:border-slate-600 hover:border-green-300 dark:hover:border-green-500"
+                  >
+                    <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <ExternalLink className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-900 dark:text-slate-100 font-medium truncate">
+                        {w.title}
+                      </p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ResultsView;
+
+
+
+================================================
+FILE: frontend/src/components/Scanner.jsx
+================================================
+// Scanner.jsx
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { uploadPdf, analyzeYoutube } from "../utils/contentScan";
+import { Viewer, Worker, SpecialZoomLevel } from "@react-pdf-viewer/core";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
+import { highlightPlugin } from "@react-pdf-viewer/highlight";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+import Model2history from "./Model2history";
+
+import { fetchUserPDFList } from "../utils/contentScan";
+import {
+  Upload,
+  FileText,
+  Link as LinkIcon,
+  Loader2,
+  AlertCircle,
+  ScanLine,
+  CheckCircle,
+  ArrowLeft,
+} from "lucide-react";
+import Model2results from "./Model2results";
+
+/**
+ * If you're working with Django + CSRF, keep your existing util:
+ *   import { getCsrfToken } from "../utils/api";
+ * and add an Xâ€‘CSRFToken header the same way you already do.
+ */
+
+const API_BASE = import.meta.env.VITE_API_BASE;
+
+/**
+ * Endpoints (adjust to match your backend):
+ *   POST `${API_BASE}/analyze/pdf`   â€“ multipart/formâ€‘data with key `file`
+ *   POST `${API_BASE}/analyze/yt`    â€“ JSON { "url": "<YouTube link>" }
+ * Your backend should return JSON like { ok: true, data: â€¦ } or { error: "â€¦" }.
+ */
+
+function Scanner() {
+  const [mode, setMode] = useState("pdf"); // "pdf" | "yt"
+  const [file, setFile] = useState(null); // File object for PDF
+  const [url, setUrl] = useState(""); // YouTube URL
+  const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState(null); // Backend result
+  const [error, setError] = useState("");
+  const viewerRef = useRef(null);
+
+  const [activeTab, setActiveTab] = useState("form");
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      type: "ai",
+      text: `Hello! I've analyzed your ${
+        mode === "pdf" ? "PDF document" : "YouTube video"
+      }. What would you like to know about it?`,
+    },
+  ]); // "form" | "results"
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
+
+  const modeOptions = [
+    {
+      value: "pdf",
+      label: "PDF Document",
+      icon: FileText,
+      description: "Analyze PDF files for content extraction",
+      placeholder: "Choose a PDF file to analyze",
+    },
+    {
+      value: "yt",
+      label: "YouTube Video",
+      icon: LinkIcon,
+      description: "Extract information from YouTube videos",
+      placeholder: "https://www.youtube.com/watch?v=...",
+    },
+  ];
+  const fileUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file]
+  );
+
+  useEffect(() => {
+    if (viewerRef.current) {
+      viewerRef.current.zoom(SpecialZoomLevel.ActualSize); // 100% zoom
+    }
+  }, [fileUrl]);
+  const highlightPluginInstance = highlightPlugin();
+  const { jumpToHighlightArea, highlightAreas, setHighlightAreas } =
+    highlightPluginInstance;
+
+  /* ---------- handlers ---------- */
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0] ?? null;
+    setFile(selectedFile);
+    console.log("Selected file:", selectedFile);
+
+    setError("");
+  };
+
+  const handleUrlChange = (e) => {
+    setUrl(e.target.value);
+    setError("");
+  };
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    // clear previous inputs so user doesn't accidentally send wrong thing
+    setFile(null);
+    setUrl("");
+    setResponse(null);
+    setError("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setResponse(null);
+
+    try {
+      if (mode === "pdf") {
+        if (!file) return setError("Please choose a PDF file to analyze.");
+        let data = await uploadPdf(file);
+        setIsLoading(true);
+        setResponse(data);
+        setActiveTab("results");
+        return;
+      }
+
+      if (mode === "yt") {
+        if (!url.trim())
+          return setError("Please paste a YouTube link to analyze.");
+        let data = await analyzeYoutube(url);
+        setIsLoading(true);
+        console.log("YouTube analysis response:", data);
+
+        setResponse(data);
+        setActiveTab("results");
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          "Something went wrong. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getCurrentModeConfig = () => {
+    return modeOptions.find((option) => option.value === mode);
+  };
+
+  const handleNewScan = () => {
+    setActiveTab("form");
+    setResponse(null);
+    setError("");
+    setFile(null);
+    setUrl("");
+  };
+
+  /* ---------- helpers ---------- */
+  const prettyJson = (json) => JSON.stringify(json, null, 2);
+
+  return (
+    <div className="space-y-6">
+      {/* ---------------- TAB 1 : SCANNER FORM ---------------- */}
+      {activeTab === "form" && (
+        <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg">
+              <ScanLine className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                AI Content Scanner
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400">
+                Analyze PDFs and YouTube videos with AI-powered extraction
+              </p>
+            </div>
+          </div>
+
+          {/* Mode Selection */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Content Type
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {modeOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleModeChange(option.value)}
+                    className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                      mode === option.value
+                        ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                        : "border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className={`w-5 h-5 ${
+                          mode === option.value
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-slate-500 dark:text-slate-400"
+                        }`}
+                      />
+                      <div>
+                        <h3
+                          className={`font-medium ${
+                            mode === option.value
+                              ? "text-green-900 dark:text-green-100"
+                              : "text-slate-900 dark:text-slate-100"
+                          }`}
+                        >
+                          {option.label}
+                        </h3>
+                        <p
+                          className={`text-sm ${
+                            mode === option.value
+                              ? "text-green-700 dark:text-green-300"
+                              : "text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Input Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                {mode === "pdf" ? "Upload File" : "Video URL"}
+              </label>
+
+              {mode === "pdf" ? (
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                  />
+                  <Upload className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={getCurrentModeConfig()?.placeholder}
+                    value={url || ""}
+                    onChange={handleUrlChange}
+                    className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                  <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                </div>
+              )}
+            </div>
+
+            {/* File Info Display */}
+            {mode === "pdf" && file && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                isLoading
+                  ? "bg-slate-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+              } text-white`}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Analyzing Content...</span>
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <ScanLine className="w-4 h-4" />
+                  Start Analysis
+                </span>
+              )}
+            </button>
+          </form>
+
+          {/* Error Display */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+          <Model2history />
+        </section>
+      )}
+
+      {/* ---------------- TAB 2 : RESULTS ---------------- */}
+      {activeTab === "results" && (
+        <Model2results
+          file={file}
+          url={url}
+          mode={mode}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          onNewScan={handleNewScan}
+          viewerRef={viewerRef}
+          fileUrl={fileUrl}
+          response={response}
+        />
+      )}
+    </div>
+  );
+}
+
+export default Scanner;
+
+
+
+================================================
+FILE: frontend/src/contexts/AuthContext.jsx
+================================================
+// src/contexts/AuthContext.jsx
+import React, { createContext, useEffect, useState } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import axios from "axios";
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [firebaseUid, setFirebaseUid] = useState(null);
+  const [firebaseIdToken, setFirebaseIdToken] = useState(null);
+  const [csrfToken, setCsrfToken] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const API_BASE = import.meta.env.VITE_API_BASE;
+  const auth = getAuth();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
+      if (user) {
+        try {
+          const idToken = await user.getIdToken();
+          setFirebaseUid(user.uid);
+          setFirebaseIdToken(idToken);
+
+          // Fetch CSRF only once after login
+          const res = await axios.get(`${API_BASE}/get-csrf/`, {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+            withCredentials: true, // include cookies
+          });
+
+          if (res.data.csrfToken) {
+            setCsrfToken(res.data.csrfToken);
+          } else {
+            console.warn("No CSRF token in response");
+          }
+        } catch (err) {
+          console.error("Error during login token or CSRF fetch:", err);
+        }
+      } else {
+        // Clear everything if user logs out
+        setFirebaseUid(null);
+        setFirebaseIdToken(null);
+        setCsrfToken(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{ firebaseUid, firebaseIdToken, csrfToken, loading }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 
 
@@ -1334,7 +5013,7 @@ const AuthForm = () => {
       );
       const token = await user.getIdToken();
       localStorage.setItem('token', token);
-      alert('Login successful!');
+
       navigate('/dashboard');
     } catch (error) {
       console.error(error);
@@ -1366,7 +5045,6 @@ const AuthForm = () => {
         },
       );
 
-      alert('Signup successful! Please log in.');
       setIsLogin(true);
     } catch (error) {
       console.error(error);
@@ -1397,7 +5075,7 @@ const AuthForm = () => {
           },
         );
       }
-      alert('Login successful via Google!');
+      setIsLogin(true);
       navigate('/dashboard');
     } catch (error) {
       console.error(error);
@@ -1526,280 +5204,174 @@ export default AuthForm;
 ================================================
 FILE: frontend/src/pages/Dashboard.jsx
 ================================================
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { getCsrfToken } from "../utils/api"; // Adjust the import path
-import { BookOpen, Sparkles, GraduationCap, AlertCircle } from "lucide-react";
+// Dashboard.jsx
+import React, { useState } from "react";
+import {
+  LayoutDashboard,
+  History,
+  ScanBarcode,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  User,
+  Database,
+} from "lucide-react";
 
-function Dashboard() {
-  const [topic, setTopic] = useState("");
-  const [grade, setGrade] = useState("");
-  const [chapters, setChapters] = useState([]);
-  const [error, setError] = useState("");
-  const [formError, setFormError] = useState("");
-  const [loading, setLoading] = useState(false); // ⬅️ new
-  const [csrfToken, setCsrfToken] = useState(null);
-  const [videos, setVideos] = useState([]);
-  const gradeOptions = [
-    { value: "school", label: "Elementary School", icon: "🎒" },
-    { value: "high school", label: "High School", icon: "📚" },
-    { value: "college", label: "College", icon: "🎓" },
-    { value: "phd", label: "PhD Level", icon: "🔬" },
-  ];
+// ðŸ‘‰ slot in your real screens here
+import Resources from "../components/Resources"; // Adjust the import path
+import Scanner from "../components/Scanner"; // Adjust the import path
 
-  const API_BASE = import.meta.env.VITE_API_BASE;
+const TAB_CONFIG = [
+  { id: "resources", label: "Resources", icon: LayoutDashboard },
+  { id: "scanner", label: "Scanner", icon: ScanBarcode },
+];
 
-  useEffect(() => {
-    (async () => {
-      const token = await getCsrfToken();
-      if (token) setCsrfToken(token);
-    })();
-  }, []);
 
-  const generateChapters = async () => {
-    if (!topic.trim() || !grade.trim()) {
-      setFormError("Please fill in both the topic and grade.");
-      setChapters([]);
-      return;
-    }
+export default function Dashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("resources");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        `${API_BASE}/chapters/`,
-        { topic, grade },
-        {
-          withCredentials: true,
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("Response from server:", res.data);
+  const CurrentScreen = {
+  resources: Resources,
+  scanner: Scanner,
+}[activeTab];
 
-      // 👇 grab the array from res.data.data.chapters
-      setChapters(res.data?.data?.chapters || []);
-      setError("");
-      setFormError("");
-    } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
-      setChapters([]);
-    } finally {
-      setLoading(false);
-    }
+
+  const getTabTitle = (tabId) => {
+    const tab = TAB_CONFIG.find(t => t.id === tabId);
+    return tab ? tab.label : "Dashboard";
   };
 
-  const fetchVideoResources = async (e) => {
-    const chapter = e.target.innerHTML.trim();
-
-    if (!topic?.trim()) return setError("Topic cannot be blank");
-    if (!grade?.trim()) return setError("Grade cannot be blank");
-    if (!chapter) return setError("Chapter cannot be blank");
-
-    try {
-      setError("");
-
-      const res = await axios.post(
-        `${API_BASE}/videos/`,
-        { topic, grade, chapter },
-        {
-          withCredentials: true,
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("Video response:", res.data);
-      setVideos(res.data?.data?.videos || []);
-    } catch (err) {
-      const backendMsg = err?.response?.data?.error;
-      setError(backendMsg || err.message || "Failed to fetch videos");
-      setVideos([]);
-    }
+  const getTabDescription = (tabId) => {
+  const descriptions = {
+    resources: "Manage and view your resource collection",
+    scanner: "Scan and identify new resources"
   };
+  return descriptions[tabId] || "Navigate through your dashboard";
+};
+
+
   return (
-    <div className="max-w-2xl mx-auto mt-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-2xl rounded-3xl border border-blue-100">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-          <BookOpen className="w-8 h-8 text-white" />
+    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <aside
+        className={`bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 transition-all duration-300 ease-in-out border-r border-slate-700
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          ${sidebarCollapsed ? "w-16" : "w-64"}
+          fixed sm:static inset-y-0 z-40 sm:translate-x-0 shadow-xl`}
+      >
+        {/* Header with logo and collapse button */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+                <Database className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-semibold text-lg">Resource Hub</span>
+            </div>
+          )}
+          
+          {/* Mobile close button */}
+          <button
+            className="p-1 rounded-lg hover:bg-slate-700 transition-colors sm:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
+          
+          {/* Desktop collapse button */}
+          <button
+            className="p-1 rounded-lg hover:bg-slate-700 transition-colors hidden sm:block"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
         </div>
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-          AI Chapter Generator
-        </h2>
-        <p className="text-gray-600 text-sm">
-          Generate comprehensive chapter outlines for any topic
-        </p>
-      </div>
 
-      <div className="space-y-6">
-        {/* Topic Input */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Topic
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Enter your topic (e.g., Machine Learning, History of Rome)"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="w-full p-4 pl-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-            />
-            <Sparkles className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
-          </div>
-        </div>
-
-        {/* Grade Level Select */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Academic Level
-          </label>
-          <div className="relative">
-            <select
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className="w-full p-4 pl-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none cursor-pointer"
+        {/* Navigation menu */}
+        <nav className="mt-6 space-y-2 px-3">
+          {TAB_CONFIG.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`group flex items-center w-full px-3 py-3 text-left gap-3 rounded-lg transition-all duration-200
+                ${activeTab === id 
+                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-blue-400 shadow-lg" 
+                  : "hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                }`}
+              title={sidebarCollapsed ? label : undefined}
             >
-              <option value="">Select academic level</option>
-              {gradeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.icon} {option.label}
-                </option>
-              ))}
-            </select>
-            <GraduationCap className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
-            <div className="absolute right-4 top-4 w-5 h-5 text-gray-400 pointer-events-none">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <Icon
+                size={20}
+                className={`shrink-0 transition-colors ${
+                  activeTab === id ? "text-blue-400" : "text-slate-400 group-hover:text-blue-300"
+                }`}
+              />
+              {!sidebarCollapsed && (
+                <span className="font-medium">{label}</span>
+              )}
+              {activeTab === id && (
+                <div className="ml-auto w-2 h-2 bg-blue-400 rounded-full"></div>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom section */}
+        {!sidebarCollapsed && (
+          <div className="mt-auto p-4 border-t border-slate-700">
+            <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">User</p>
+                <p className="text-xs text-slate-400 truncate">Admin</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Error Message */}
-        {formError && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <p className="text-red-700 text-sm">{formError}</p>
-          </div>
         )}
+      </aside>
 
-        {/* Generate Button */}
-        <button
-          onClick={generateChapters}
-          disabled={loading}
-          className={`w-full font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg
-            ${
-              loading
-                ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed scale-100"
-                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98]"
-            } text-white`}
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-3">
-              <svg
-                className="w-5 h-5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  d="M4 12a8 8 0 018-8"
-                  strokeWidth="4"
-                />
-              </svg>
-              <span>Generating Chapters...</span>
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              Generate Chapters
-            </span>
-          )}
-        </button>
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Main Content Area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900 min-w-0">
+       
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            {CurrentScreen ? (
+              <CurrentScreen />
+            ) : (
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 text-center">
+                <div className="p-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <X className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                  Tab Not Found
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400">
+                  The requested tab could not be found. Please select a valid option from the sidebar.
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
-      {/* General Error Message */}
-      {error && (
-        <div className="mt-6 flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-
-      {/* Generated Chapters */}
-      {chapters.length > 0 && (
-        <div className="mt-8 animate-in fade-in duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-xl font-semibold text-gray-800">
-              Generated Chapters
-            </h3>
-            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
-              {chapters.length}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {chapters.map((chapter, i) => (
-              <div
-                key={i}
-                className="group bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-2 border-gray-200 hover:border-blue-300 rounded-xl p-4 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md transform hover:scale-[1.02]"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1">
-                    <h4
-                      key={i}
-                      onClick={fetchVideoResources}
-                      className="font-medium text-gray-800 group-hover:text-indigo-700 transition-colors cursor-pointer"
-                    >
-                      {chapter}
-                    </h4>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-       {/* Display fetched videos */}
-      {videos.length > 0 && (
-        <ul className="mt-4 space-y-2">
-          {videos.map((v, i) => (
-            <li key={i}>
-              <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                {v.title}
-              </a>
-            </li>
-          ))}
-        </ul>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 sm:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
     </div>
   );
 }
-
-export default Dashboard;
-
 
 
 ================================================
@@ -1854,7 +5426,7 @@ export default NotFound;
 FILE: frontend/src/utils/api.js
 ================================================
 import axios from 'axios';
-
+import { getFirebaseIdToken } from './firebase';
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Create axios instance
@@ -1879,6 +5451,7 @@ export const apiRequest = async (method, url, data = null) => {
   try {
     // Get CSRF token first
     const csrfToken = await getCsrfToken();
+    const idToken = await getFirebaseIdToken();
     
     const config = {
       method,
@@ -1886,6 +5459,7 @@ export const apiRequest = async (method, url, data = null) => {
       withCredentials: true,
       headers: {
         'X-CSRFToken': csrfToken,
+        'Authorization': `Bearer ${idToken}`,
         'Content-Type': 'application/json',
       },
     };
@@ -1901,6 +5475,294 @@ export const apiRequest = async (method, url, data = null) => {
     throw error;
   }
 };
+
+
+================================================
+FILE: frontend/src/utils/contentScan.js
+================================================
+// src/utils/contentScan.js   (or wherever you keep API helpers)
+import axios from "axios";
+import { getCsrfToken } from "./api";      // keep if you use CSRF
+import { getFirebaseIdToken } from "./firebase"; // keep if you use Firebase auth
+
+const API_BASE = import.meta.env.VITE_API_BASE;
+
+/* ---------- PDF ---------- */
+export async function uploadPdf(file) {
+  if (!file) throw new Error("No PDF file provided");
+  const fd = new FormData();
+  fd.append("pdf", file);
+
+  const csrf = await getCsrfToken();
+  const idToken = await getFirebaseIdToken();       // drop if not needed
+  const res = await axios.post(`${API_BASE}/process-pdf/`, fd, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      "X-CSRFToken": csrf,  
+      Authorization: `Bearer ${idToken}`,               // drop if not needed
+    },
+    withCredentials: true,
+  });
+  console.log("PDF upload response:", res.data);
+  
+  return res.data;                         // { status: true, … }
+}
+
+/* ---------- YouTube ---------- */
+export async function analyzeYoutube(url) {
+  if (!url) throw new Error("No YouTube URL provided");
+
+  const csrf = await getCsrfToken();       // drop if not needed
+  const idToken = await getFirebaseIdToken(); // drop if not needed
+  const res = await axios.post(
+    `${API_BASE}/process-youtube/`,
+    { video_url: url },
+    {
+      headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrf,  
+      Authorization: `Bearer ${idToken}`,               // drop if not needed
+    },    // drop if not needed
+      withCredentials: true,
+    }
+  );
+
+  return res.data;                         // { ok: true, … }
+}
+
+
+export async function askPdfQuestion(pdfId, question) {
+  if (!pdfId || !question?.trim()) {
+    throw new Error("pdfId and question are required");
+  }
+  const csrf = await getCsrfToken();
+  const idToken = await getFirebaseIdToken();
+
+  /* 2️⃣  POST to /api/question-answer/ */
+  const res = await axios.post(
+    `${API_BASE}/answer-question/`,          // adjust path if needed
+    {
+      pdf_id: pdfId,
+      question: question.trim(),
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrf,
+        Authorization: `Bearer ${idToken}`,  // 👉 Django uses this
+      },
+    }
+  );
+
+
+  return res.data;                          
+}
+
+
+
+export async function fetchUserPDFList() {
+  try {
+    const idToken = await getFirebaseIdToken(); // Ensure you have a valid Firebase ID token
+    const csrf = await getCsrfToken();
+    if (!idToken) throw new Error("User not authenticated");
+
+
+    const response = await fetch(`${API_BASE}/user/pdfs/`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${idToken}`,
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.status) {
+      throw new Error(data.error || "Failed to fetch PDF list.");
+    }
+
+    return data.data; // Array of PDFs
+  } catch (err) {
+    console.error("Error fetching user PDFs:", err);
+    throw err;
+  }
+}
+
+
+
+export async function deletePdf(pdfId) {
+  try {
+    const idToken = await getFirebaseIdToken();
+    const csrf = await getCsrfToken();
+    if (!idToken) throw new Error("User not authenticated");
+
+    const response = await axios.delete(`${API_BASE}/user/pdfs/${pdfId}/`, {
+      headers: {
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
+
+    return {
+      success: true,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Delete PDF error:", error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Something went wrong",
+      error: error.response?.data?.error || null,
+    };
+  }
+}
+
+export async function askYoutubeQuestion(videoId, question) {
+  const token = await getFirebaseIdToken();
+  const csrf = await getCsrfToken();
+  if (!token) throw new Error("User not authenticated");
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_BASE}/ask-youtube-question/`,
+    { video_id: videoId, question },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return res.data;
+}
+
+
+
+export async function fetchYouTubeHistory() {
+  const token = await getFirebaseIdToken();
+  const csrf = await getCsrfToken();
+  if (!token) throw new Error("User not authenticated");
+  const res = await fetch(`${API_BASE}/user/youtube-videos/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-CSRFToken": csrf,  
+      "Content-Type": "application/json",
+    },
+  });
+  const json = await res.json();
+  if (!json.status) throw new Error("Failed to fetch YouTube history");
+  return json.data;
+}
+
+
+export async function deleteYoutubeVideo(videoId) {
+  const token = await getFirebaseIdToken();
+  const csrf = await getCsrfToken();
+  if (!token) throw new Error("User not authenticated");
+  const res = await fetch(`${API_BASE}/user/youtube-videos/${videoId}/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-CSRFToken": csrf, 
+      "Content-Type": "application/json",
+    },
+  });
+
+  const json = await res.json();
+  if (!json.status) throw new Error(json.error || "Failed to delete video");
+  return json;
+}
+
+
+export async function fetchChapterGenerationHistory() {
+   // if CSRF is enabled
+  const idToken = await getFirebaseIdToken();
+  const csrfToken = await getCsrfToken();
+  if (!idToken) throw new Error("User not authenticated");
+  const res = await axios.get(`${API_BASE}/chapters/history/`, {
+    withCredentials: true,
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrfToken, 
+    },
+  });
+
+  return res.data.data;
+}
+
+
+export async function deleteChapterGeneration(generationId) {
+  const firebaseIdToken = await getFirebaseIdToken();
+  const csrfToken = await getCsrfToken();
+
+  const res = await fetch(`${API_BASE}/chapters/${generationId}/`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${firebaseIdToken}`,
+      "X-CSRFToken": csrfToken,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Failed to delete generation");
+  }
+
+  return await res.json();
+}
+
+
+export async function fetchChapterResources(generationId) {
+  try {
+    const idToken = await getFirebaseIdToken();
+    const csrfToken = await getCsrfToken(); 
+    if (!idToken) throw new Error("User not authenticated");
+
+    const response = await axios.get(`${API_BASE}/chapters/${generationId}/resources/`, {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data.data; 
+  } catch (error) {
+    console.error("Error fetching chapter resources:", error);
+    throw error;
+  }
+}
+
+
+
+export async function generateMultiVideoMCQs(videoUrls) {
+  if (!Array.isArray(videoUrls) || videoUrls.length !== 4) {
+    throw new Error("You must provide exactly 4 video URLs.");
+  }
+  const idToken = await getFirebaseIdToken();
+  const csrfToken = await getCsrfToken();
+  if (!idToken) throw new Error("User not authenticated");
+
+  try {
+    const response = await axios.post(`${API_BASE}/generate-multi-mcqs/`, {
+      video_urls: videoUrls,
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data; // Contains { status, total_questions, questions, saved_to }
+  } catch (error) {
+    console.error("Failed to generate MCQs:", error.response?.data || error.message);
+    throw error;
+  }
+}
 
 
 ================================================
@@ -1930,6 +5792,60 @@ export const db   = getFirestore(app);     // 🗄️ Firestore  ← NEW
 // Analytics (only in browser, not SSR)
 export const analytics = (await isSupported()) ? getAnalytics(app) : null;
 
+// Inside firebase.js
+export const getFirebaseIdToken = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not logged in");
+  return await user.getIdToken();
+};
+
 export default app;
 
+
+
+================================================
+FILE: frontend/src/utils/getCurrentUserUID.js
+================================================
+// utils/getCurrentUserUID.js
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+
+export const getCurrentUserUID = () => {
+  return new Promise((resolve, reject) => {
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        unsubscribe(); // Stop listening after first result
+        if (user) {
+          resolve(user.uid);
+        } else {
+          reject("No user is currently signed in.");
+        }
+      },
+      (error) => {
+        reject(error);
+      }
+    );
+  });
+};
+
+
+
+================================================
+FILE: transcripts/multi_mcqs.json
+================================================
+[]
+
+
+================================================
+FILE: vectorstores/book_2IUpOTCYcLfJ1fLY8jItUCw11in1_book2/index.faiss
+================================================
+[Non-text file]
+
+
+================================================
+FILE: vectorstores/book_2IUpOTCYcLfJ1fLY8jItUCw11in1_book2/index.pkl
+================================================
+[Non-text file]
 

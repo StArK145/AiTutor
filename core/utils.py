@@ -219,14 +219,18 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 def get_video_id(video_url: str) -> str:
-    """Extract video ID from YouTube URL"""
+    """Extract video ID from a YouTube URL or dict"""
+    # Handle accidental dict input
+    if isinstance(video_url, dict):
+        video_url = video_url.get("url", "")
+
     if "v=" in video_url:
-        video_id = video_url.split("v=")[1].split("&")[0]
+        return video_url.split("v=")[1].split("&")[0]
     elif "youtu.be/" in video_url:
-        video_id = video_url.split("youtu.be/")[1].split("?")[0]
+        return video_url.split("youtu.be/")[1].split("?")[0]
     else:
-        video_id = video_url  # Assume it's just the ID
-    return video_id
+        return video_url.strip()  # Fallback: assume already ID
+
 
 def download_youtube_transcript(video_id: str, languages: list = ['en']) -> tuple:
     """Download transcript and return as formatted text with timestamps"""

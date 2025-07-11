@@ -747,14 +747,21 @@ class MultiVideoMCQAPI(APIView):
 
         def process_video(video_url):
             try:
-                transcript_chunks = get_transcript_chunks_from_youtube(video_url)
+                # Extract URL from dict if needed
+                video_url_str = video_url["url"] if isinstance(video_url, dict) else video_url
+
+                transcript_chunks = get_transcript_chunks_from_youtube(video_url_str)
                 if not transcript_chunks:
                     return []
-                _, mcqs = generate_mcqs_from_transcript(transcript_chunks, get_video_id(video_url))
+
+                video_id = get_video_id(video_url_str)
+                _, mcqs = generate_mcqs_from_transcript(transcript_chunks, video_id)
                 return mcqs or []
+
             except Exception as e:
-                print(f"[ERROR] MCQ generation failed: {e}")
+                print(f"[ERROR] Processing failed for {video_url}: {str(e)}")
                 return []
+
 
 
         with ThreadPoolExecutor(max_workers=4) as executor:
