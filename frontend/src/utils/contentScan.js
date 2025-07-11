@@ -254,3 +254,30 @@ export async function fetchChapterResources(generationId) {
     throw error;
   }
 }
+
+
+
+export async function generateMultiVideoMCQs(videoUrls) {
+  if (!Array.isArray(videoUrls) || videoUrls.length !== 4) {
+    throw new Error("You must provide exactly 4 video URLs.");
+  }
+  const idToken = await getFirebaseIdToken();
+  const csrfToken = await getCsrfToken();
+  if (!idToken) throw new Error("User not authenticated");
+
+  try {
+    const response = await axios.post(`${API_BASE}/generate-multi-mcqs/`, {
+      video_urls: videoUrls,
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data; // Contains { status, total_questions, questions, saved_to }
+  } catch (error) {
+    console.error("Failed to generate MCQs:", error.response?.data || error.message);
+    throw error;
+  }
+}

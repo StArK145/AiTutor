@@ -8,34 +8,57 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
+import {generateMultiVideoMCQs} from "../utils/contentScan"; // Import the function to generate quizzes
 
 function ResultsView({
-  chapters, videos, websites,
-  loading, error,
-  topic, grade,
+  chapters,
+  videos,
+  websites,
+  loading,
+  error,
+  topic,
+  grade,
   fromHistory,
   setError,
-  fetchVideoResources, fetchWebResources,
+  fetchVideoResources,
+  fetchWebResources,
   setLoading,
-  setVideos, setWebsites,
-  activeTab, setActiveTab,
+  setVideos,
+  setWebsites,
+  activeTab,
+  setActiveTab,
+  chapterHistory,
   onBack,
 }) {
   const handleChapterClick = async (e) => {
-    const chapter = e.target.innerHTML;
+    const chapter = e.target.textContent; // More reliable than innerHTML
 
-    if (!topic?.trim()) return setError("Topic cannot be blank");
-    if (!grade?.trim()) return setError("Grade cannot be blank");
     if (!chapter) return setError("Chapter cannot be blank");
+
     setVideos([]);
     setWebsites([]);
+    setError("");
 
+    if (fromHistory) {
+      // ✅ Find chapter object by matching name
+      const found = chapterHistory.find((item) => item.name === chapter);
+
+      if (found) {
+        setVideos(found.videos || []);
+        setWebsites(found.websites || []);
+      } else {
+        setError("Chapter not found in history.");
+      }
+
+      return; // ✅ Skip API calls
+    }
+    if (!topic?.trim()) return setError("Topic cannot be blank");
+    if (!grade?.trim()) return setError("Grade cannot be blank");
+
+    // 🔁 Live fetch from backend if not from history
     try {
-      setError("");
       setLoading(true);
-
       await fetchVideoResources(chapter);
-
       const websitesArr = await fetchWebResources({ topic, grade, chapter });
       setWebsites(websitesArr);
     } catch (err) {
@@ -47,7 +70,18 @@ function ResultsView({
       setLoading(false);
     }
   };
-  
+  const  handleGenerateQuiz = async() => {
+  console.log("Generating quiz for these videos:", videos);
+  const res = await generateMultiVideoMCQs(videos);
+  if (res.error) {
+    setError(res.error);
+  } else {
+    console.log("Quiz generated successfully:", res);
+  }
+
+};
+
+
   return (
     <div className="space-y-6">
       {/* Back button */}
@@ -113,7 +147,6 @@ function ResultsView({
           </div>
         </div>
       )}
-      
 
       {/* Resources Grid */}
       {(videos.length > 0 || websites.length > 0) && (
@@ -153,6 +186,14 @@ function ResultsView({
               </div>
             </div>
           )}
+          <div className="col-span-full flex justify-center mt-4">
+            <button
+              onClick={handleGenerateQuiz}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 rounded-lg transition duration-200"
+            >
+              Generate Quiz
+            </button>
+          </div>
 
           {/* Websites */}
           {websites.length > 0 && (

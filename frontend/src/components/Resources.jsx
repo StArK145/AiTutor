@@ -26,6 +26,7 @@ function Resources() {
   const [videos, setVideos] = useState([]);
   const [websites, setWebsites] = useState([]);
   const [activeTab, setActiveTab] = useState("form");
+  const [chapterHistory, setChapterHistory] = useState([]);
   const [fromHistory, setFromHistory] = useState(false);
 
   const gradeOptions = [
@@ -99,7 +100,7 @@ function Resources() {
         }
       );
 
-      console.log("Video response:", res.data);
+      console.log("Video response:", res.data.data.videos);
       setVideos(res.data?.data?.videos || []);
     } catch (err) {
       const backendMsg = err?.response?.data?.error;
@@ -127,32 +128,16 @@ function Resources() {
     return res.data?.data?.websites || [];
   };
 
-  // const handleChapterClick = async (e) => {
-  //   const chapter = e.target.innerHTML;
+ useEffect(() => {
+  if (fromHistory) {
+    const chapterNames = chapterHistory.map((item) => item.name);
+    setChapters(chapterNames);  // ✅ now chapters is just an array of strings
+    console.log("Chapter names:", chapterNames);
 
-  //   if (!topic?.trim()) return setError("Topic cannot be blank");
-  //   if (!grade?.trim()) return setError("Grade cannot be blank");
-  //   if (!chapter) return setError("Chapter cannot be blank");
-  //   setVideos([]);
-  //   setWebsites([]);
+    setActiveTab("results");
+  }
+}, [fromHistory, chapterHistory]);
 
-  //   try {
-  //     setError("");
-  //     setLoading(true);
-
-  //     await fetchVideoResources(chapter);
-
-  //     const websitesArr = await fetchWebResources({ topic, grade, chapter });
-  //     setWebsites(websitesArr);
-  //   } catch (err) {
-  //     const backendMsg = err?.response?.data?.error;
-  //     setError(backendMsg || err.message || "Failed to fetch resources");
-  //     setVideos([]);
-  //     setWebsites([]);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   return (
     <div className="space-y-6">
@@ -258,8 +243,8 @@ function Resources() {
             )}
           </button>
           <Model1history 
-          setActiveTab={setActiveTab}
           setFromHistory={setFromHistory}
+          setChapterHistory={setChapterHistory}
           />
         </section>
       )}
@@ -281,6 +266,7 @@ function Resources() {
           setWebsites={setWebsites}
           setLoading={setLoading}
           fromHistory={fromHistory}
+          chapterHistory ={chapterHistory}
           onBack={() => setActiveTab("form")}
         />
       )}

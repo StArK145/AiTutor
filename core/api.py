@@ -20,6 +20,10 @@ from .utils import generate_chapter_names
 from .yt_processor import YouTubeProcessor
 from .models import UserYouTubeVideo, YouTubeConversation,ChapterResource
 from .yt_processor import YouTubeProcessor
+from .models import ChapterVideoResource, ChapterWebResource
+from .utils import get_video_resources, get_web_resources   
+from django.contrib.auth import get_user_model
+
 
 
 
@@ -189,6 +193,34 @@ class ChapterResourcesAPI(APIView):
             
             data = []
             for chapter in chapters:
+                # Check if chapter already has resources
+                has_resources = chapter.videos.exists() or chapter.websites.exists()
+                
+                if not has_resources:
+                    # Generate and save resources if none exist
+                    videos = get_video_resources(generation.topic, generation.grade, chapter.name)
+                    websites = get_web_resources(generation.topic, generation.grade, chapter.name)
+                    
+                    # Save videos
+                    for video in videos[:4]:  # Limit to 4 videos
+                        ChapterVideoResource.objects.create(
+                            chapter=chapter,
+                            title=video['title'],
+                            url=video['url'],
+                            channel=video['channel'],
+                            duration=video['duration']
+                        )
+                    
+                    # Save websites
+                    for website in websites[:4]:  # Limit to 4 websites
+                        ChapterWebResource.objects.create(
+                            chapter=chapter,
+                            title=website['title'],
+                            url=website['url'],
+                            source=website['source']
+                        )
+                
+                # Get all resources (either existing or newly created)
                 chapter_data = {
                     'id': chapter.id,
                     'name': chapter.name,
@@ -207,6 +239,7 @@ class ChapterResourcesAPI(APIView):
                 data.append(chapter_data)
             
             return JsonResponse({'data': data})
+            
         except ChapterGeneration.DoesNotExist:
             return JsonResponse({'error': 'Not found'}, status=404)
 
@@ -687,3 +720,76 @@ class YouTubeVideoDeleteAPI(APIView):
                 'error': str(e),
                 'message': 'Failed to delete video'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+from concurrent.futures import ThreadPoolExecutor
+import json
+
+from django.conf import settings
+from .utils import (
+    get_video_id,
+    download_youtube_transcript,
+    parse_transcript,
+    generate_mcqs_from_transcript
+)
+
+
+class MultiVideoMCQAPI(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        video_urls = request.data.get("video_urls")
+        if not video_urls or len(video_urls) != 4:
+            return JsonResponse({"error": "Provide exactly 4 video URLs"}, status=400)
+
+        goal_distribution = [2, 3, 2, 3]
+
+        from .utils import get_transcript_chunks_from_youtube
+
+        def process_video(video_url):
+            try:
+                transcript_chunks = get_transcript_chunks_from_youtube(video_url)
+                if not transcript_chunks:
+                    return []
+                _, mcqs = generate_mcqs_from_transcript(transcript_chunks, get_video_id(video_url))
+                return mcqs or []
+            except Exception as e:
+                print(f"[ERROR] MCQ generation failed: {e}")
+                return []
+
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            all_mcqs = list(executor.map(process_video, video_urls))
+
+        # Step 1: Try to assign original goal distribution
+        combined_questions = []
+        leftovers = []
+
+        for mcqs, goal in zip(all_mcqs, goal_distribution):
+            if mcqs:
+                to_add = mcqs[:goal]
+                combined_questions.extend(to_add)
+                if len(mcqs) > goal:
+                    leftovers.extend(mcqs[goal:])
+            else:
+                # This video failed or returned empty
+                continue
+
+        # Step 2: Fill remaining questions from leftovers if total < 10
+        while len(combined_questions) < 10 and leftovers:
+            combined_questions.append(leftovers.pop(0))
+
+        # Step 3: If still not enough, just return what we have
+        combined_questions = combined_questions[:10]
+
+        # Save to JSON
+        save_path = os.path.join(settings.BASE_DIR, "transcripts", "multi_mcqs.json")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(combined_questions, f, indent=4)
+
+        return JsonResponse({
+            "status": True,
+            "total_questions": len(combined_questions),
+            "questions": combined_questions,
+            "saved_to": "/transcripts/multi_mcqs.json"
+        }, status=200)

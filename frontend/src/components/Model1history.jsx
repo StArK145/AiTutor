@@ -6,7 +6,7 @@ import {
 import { Clock, BookOpen, Calendar, Hash, Trash2 } from "lucide-react";
 import { fetchChapterResources } from "../utils/contentScan";
 
-function Model1history(setActiveTab, setFromHistory) {
+function Model1history( {setFromHistory,setChapterHistory}) {
   const [history, setHistory] = useState([]);
   const loadHistory = async () => {
     try {
@@ -38,6 +38,9 @@ const handleClick = async (item) => {
   console.log("Clicked ID:", item.id);
   try {
     const resources = await fetchChapterResources(item.id); // 👈 API call
+    setChapterHistory(resources); // 👈 Update state with fetched resources
+    setFromHistory(true); // 👈 Set fromHistory to true
+
     console.log("Fetched resources:", resources);
   } catch (err) {
     console.error("Failed to fetch chapter resources:", err);

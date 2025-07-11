@@ -3,6 +3,7 @@ from django.urls import path, include
 from core.api import FirebaseLoginAPI, DashboardAPI, ChapterAPI, VideoResourcesAPI, WebResourcesAPI, PDFQAAPI, QuestionAnswerAPI, UserPDFListAPI, DeletePDFAPI, PDFConversationHistoryAPI, YouTubeQuestionAPI, YouTubeVideoAPI, YouTubeVideoListAPI, YouTubeVideoDeleteAPI, ChapterGenerationHistoryAPI, ChapterResourcesAPI, DeleteChapterGenerationAPI
 from django.views.generic import TemplateView
 from core.api import get_csrf_token
+from core.api import MultiVideoMCQAPI
 
 urlpatterns = [
     # Existing URLs
@@ -17,6 +18,7 @@ urlpatterns = [
     path('api/videos/', VideoResourcesAPI.as_view(), name='api_videos'),
     path('api/websites/', WebResourcesAPI.as_view(), name='api_websites'),
     path('api/chapters/<int:generation_id>/', DeleteChapterGenerationAPI.as_view(), name='api_delete_chapter_generation'),
+    path("api/generate-multi-mcqs/", MultiVideoMCQAPI.as_view(), name="generate_multi_mcqs"),
 
     
     # PDF-related URLs
