@@ -1,142 +1,142 @@
 [
     {
-        "question": "According to the speaker, what is one significant concern regarding artificial intelligence that keeps them up at night?",
+        "question": "What is the primary characteristic that distinguishes informed searching from uninformed searching?",
         "options": {
-            "a": "The rapid pace of technological advancements in AI.",
-            "b": "The potential for AI to become self-aware and autonomous.",
-            "c": "People being unaware that AI is making decisions directly impacting their lives.",
-            "d": "The high cost of developing advanced AI systems."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:00:16,160",
-        "seconds": 16,
-        "youtube_url": "https://youtu.be/aGwYtUzMQUk?t=16s",
-        "explanation": "Explanation: The speaker explicitly states that a concern keeping them up at night is that \"people may have no idea that an artificial intelligence is making a decision that directly impacts their lives.\""
-    },
-    {
-        "question": "What is the primary reason given for why many AI proof of concepts fail within organizations?",
-        "options": {
-            "a": "Lack of sufficient computing power.",
-            "b": "Insufficient data for model training.",
-            "c": "People's distrust of the AI model's results.",
-            "d": "High employee turnover in AI teams."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:01:25,120",
-        "seconds": 85,
-        "youtube_url": "https://youtu.be/aGwYtUzMQUk?t=85s",
-        "explanation": "Explanation: The speaker directly states that AI proof of concepts often fail \"because people do not trust the results from that AI model.\""
-    },
-    {
-        "question": "**What is the primary definition of Artificial Intelligence (AI) as described in the transcript?**",
-        "options": {
-            "a": "A type of robot designed for physical labor.",
-            "b": "The simulation of human intelligence processes by machines.",
-            "c": "A new programming language for complex calculations.",
-            "d": "The study of human-computer interaction."
+            "a": "Informed searching guarantees an optimal solution, while uninformed searching does not.",
+            "b": "Uninformed searching uses brute-force methods, while informed searching uses heuristic information.",
+            "c": "Informed searching has higher time complexity compared to uninformed searching.",
+            "d": "Uninformed searching is always quicker than informed searching."
         },
         "correct_answer": "b",
-        "timestamp": "00:00:02,720",
-        "seconds": 2,
-        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=2s",
-        "explanation": "Explanation: The transcript explicitly states, \"Artificial intelligence AI refers to the simulation of human intelligence processes by machines particularly computer systems.\""
+        "timestamp": "00:01:19,571",
+        "seconds": 79,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=79s",
+        "explanation": "Explanation: The transcript explicitly states that informed searching uses \"information\" which is called \"heuristic,\" whereas uninformed searching lacks this domain knowledge or guide, operating as a \"brute force method\" or \"blind searching.\""
     },
     {
-        "question": "**According to the transcript, which of the following is a key characteristic of \"General AI\"?**",
+        "question": "Which of the following terms are commonly used to refer to uninformed searching?",
         "options": {
-            "a": "Designed to perform a narrow task like facial recognition.",
-            "b": "Capable of performing any intellectual task that a human can do.",
-            "c": "Primarily used for internet searches and data analysis.",
-            "d": "Limited to solving mathematical theorems and playing chess."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:00:27,160",
-        "seconds": 27,
-        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=27s",
-        "explanation": "Explanation: The video categorizes AI into \"narrow AI... designed to perform a narrow task\" and \"general AI which can perform any intellectual task that a human can do.\""
-    },
-    {
-        "question": "**Who is credited with first coining the term \"Artificial Intelligence\" and at what significant event?**",
-        "options": {
-            "a": "Alan Turing at the Bletchley Park Conference.",
-            "b": "Marvin Minsky at the MIT AI Lab establishment.",
-            "c": "John McCarthy in 1956 at the Dartmouth conference.",
-            "d": "Claude Shannon at the Bell Labs Symposium."
+            "a": "Guided search and optimized search",
+            "b": "Heuristic search and polynomial search",
+            "c": "Brute force method and blind searching",
+            "d": "Goal-directed search and approximate search"
         },
         "correct_answer": "c",
-        "timestamp": "00:00:40,079",
+        "timestamp": "00:00:23,213",
+        "seconds": 23,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=23s",
+        "explanation": "Explanation: The speaker directly states that \"we generally call uninformed searching as brute force method or blind searching.\""
+    },
+    {
+        "question": "What is the simple meaning of \"heuristic\" in artificial intelligence as described in the video?",
+        "options": {
+            "a": "A method to guarantee the optimal solution for any problem.",
+            "b": "A technique for exploring all possible states in a search space.",
+            "c": "Making assumptions or finding a quick solution.",
+            "d": "A process to strictly avoid any form of guessing or estimation."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:40,639",
         "seconds": 40,
-        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=40s",
-        "explanation": "Explanation: The transcript states, \"The term artificial intelligence was first coined by John McCarthy in 1956 at the Dartmouth conference\"."
+        "youtube_url": "https://youtu.be/5F9YzkpnaRw?t=40s",
+        "explanation": "Explanation: The transcript explicitly states that the simple meaning of heuristic is \"making assumption for anything\" and that \"we are trying to guess or we are trying to find a quick solution.\""
     },
     {
-        "question": "What does AI ethics primarily refer to?",
+        "question": "What is the primary motivation for using heuristic functions in Artificial Intelligence, especially concerning time complexity?",
         "options": {
-            "a": "The study of artificial intelligence development only.",
-            "b": "Principles and practices for developing and using AI ethically, unbiased, transparent, and accountable.",
-            "c": "Ensuring AI systems are always accurate without human intervention.",
-            "d": "The historical impact of AI on society."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:01:53,880",
-        "seconds": 113,
-        "youtube_url": "https://youtu.be/COgvUFGLPCs?t=113s",
-        "explanation": "Explanation: The video explicitly states, \"AI ethics refers to the principles and practices that ensure artificial intelligence systems are developed and used in a way that is ethical, unbiased, transparent, and accountable.\""
-    },
-    {
-        "question": "According to the video, what is a primary reason AI ethics is crucial, especially if AI systems are not carefully designed?",
-        "options": {
-            "a": "To increase the processing speed of AI algorithms.",
-            "b": "To ensure AI systems only handle trivial tasks.",
-            "c": "To prevent AI from continuing and amplifying societal biases.",
-            "d": "To replace human decision-making entirely."
+            "a": "To ensure all possible solutions are explored for maximum accuracy.",
+            "b": "To convert polynomial time problems into non-polynomial problems.",
+            "c": "To find a quick solution and reduce exponential time complexity for NP problems.",
+            "d": "To strictly avoid any form of information or guidance during search."
         },
         "correct_answer": "c",
-        "timestamp": "00:02:21,920",
-        "seconds": 141,
-        "youtube_url": "https://youtu.be/COgvUFGLPCs?t=141s",
-        "explanation": "Explanation: The video highlights that \"AI systems might seem to be unbiased but if not designed carefully they can actually continue and amplify societal biases,\" using Google Gemini's mistakes as a key example of this problem."
+        "timestamp": "00:01:34,205",
+        "seconds": 94,
+        "youtube_url": "https://youtu.be/5F9YzkpnaRw?t=94s",
+        "explanation": "Explanation: The video states that heuristic is a technique designed to solve a problem quickly and is used to solve \"non polynomial problem in polynomial time\" by reducing the \"exponential time\" complexity often associated with uninformed search methods."
     },
     {
-        "question": "What is the speaker's main argument regarding the current focus of AI discussions?",
+        "question": "What is a key characteristic regarding the optimality of solutions typically provided by heuristic functions?",
         "options": {
-            "a": "That the primary concern should be achieving the AI singularity.",
-            "b": "That AI poses an immediate existential threat to humanity which must be prevented at all costs.",
-            "c": "That focusing on hypothetical future sci-fi scenarios distracts from AI's current, tangible impacts and ethical considerations.",
-            "d": "That AI's benefits far outweigh any potential negative consequences, making current concerns overblown."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:03:38,840",
-        "seconds": 218,
-        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=218s",
-        "explanation": "Explanation: The speaker explicitly states that instead of focusing on \"future sci-fi scenarios\" or \"existential risk,\" the discussion should shift to \"current tangible impacts\" and the work needed to address them."
-    },
-    {
-        "question": "According to the speaker, what is a significant environmental concern regarding large language models like Bloom and GPT-3?",
-        "options": {
-            "a": "They require vast amounts of physical storage space on local devices, contributing to e-waste.",
-            "b": "Their training and operation consume substantial energy and emit considerable carbon dioxide.",
-            "c": "They deplete rare earth minerals used in their construction, leading to resource scarcity.",
-            "d": "They generate significant heat, contributing directly to urban heat island effects."
+            "a": "They always guarantee an optimal solution.",
+            "b": "They provide a good solution, but not necessarily an optimal one.",
+            "c": "They always lead to a worse solution than blind search.",
+            "d": "They have no impact on the quality of the solution."
         },
         "correct_answer": "b",
-        "timestamp": "00:01:50,148",
-        "seconds": 110,
-        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=110s",
-        "explanation": "Explanation: The speaker details how AI models, especially large language models, live on the cloud and are powered by \"vast amounts of energy,\" leading to significant carbon dioxide emissions during their training and use. For example, training Bloom alone emitted 25 tons of carbon dioxide."
+        "timestamp": "00:04:54,310",
+        "seconds": 294,
+        "youtube_url": "https://youtu.be/5F9YzkpnaRw?t=294s",
+        "explanation": "Explanation: The transcript explicitly states that heuristic functions give a guarantee \"to find the good solution,\" but they \"does not give the guarantee to find the optimal solution.\""
     },
     {
-        "question": "What specific problem related to AI training data are organizations like Spawning.ai working to address for artists?",
+        "question": "What is the primary definition of search in Artificial Intelligence, as stated in the video?",
         "options": {
-            "a": "The inability of AI models to accurately replicate unique artistic styles without proper licensing.",
-            "b": "The challenge of preventing AI from generating new art in the exact style of living artists.",
-            "c": "The lack of fair compensation mechanisms for artists whose work is used commercially by AI.",
-            "d": "The difficulty for artists to prove their work was used without consent in AI model training, leading to copyright infringement issues."
+            "a": "A method to analyze data patterns.",
+            "b": "A systematic approach to find a path from a root state to the goal state.",
+            "c": "A technique to categorize intelligent processes.",
+            "d": "An algorithm to identify optimal solutions without considering cost."
         },
-        "correct_answer": "d",
-        "timestamp": "00:04:24,302",
-        "seconds": 264,
-        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=264s",
-        "explanation": "Explanation: The speaker explains that it has been \"really difficult for artists to prove that their life's work was used\" to train AI models without their consent. Spawning.ai created a tool to help artists search datasets for their work to gather \"crucial evidence\" for copyright infringement cases and is working on opt-in/opt-out mechanisms."
+        "correct_answer": "b",
+        "timestamp": "00:00:21,539",
+        "seconds": 21,
+        "youtube_url": "https://youtu.be/CnqMV_wXcBg?t=21s",
+        "explanation": "Explaination: The video states that \"search is a systematic approach to find a path from a root state to the goal state.\""
+    },
+    {
+        "question": "What are the two main requirements that a search algorithm should satisfy, according to the video?",
+        "options": {
+            "a": "Efficiency and completeness.",
+            "b": "Optimality and admissibility.",
+            "c": "Motion and systematic approach.",
+            "d": "Heuristic and informed decision-making."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:59,640",
+        "seconds": 59,
+        "youtube_url": "https://youtu.be/CnqMV_wXcBg?t=59s",
+        "explanation": "Explaination: The speaker explicitly mentions two requirements: \"it should cause a motion\" and \"the algorithm should be a systematic\" approach."
+    },
+    {
+        "question": "In the context of the Travelling Salesman Problem (TSP) discussed, what is a guaranteed outcome of using an uninformed searching method, despite its drawbacks?",
+        "options": {
+            "a": "It will provide a quick solution.",
+            "b": "It will find a solution in polynomial time.",
+            "c": "It will always yield an optimal solution.",
+            "d": "It will compromise on optimality to save time."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:02:53,804",
+        "seconds": 173,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=173s",
+        "explanation": "Explanation: The transcript states regarding uninformed search, \"It is guaranteed that you will get an optimal solution\" and later, \"But this will always give you an optimal solution that is guaranteed.\""
+    },
+    {
+        "question": "What is the primary reason for employing heuristic methods in informed searching?",
+        "options": {
+            "a": "To guarantee an optimal solution regardless of the problem size.",
+            "b": "To increase the time complexity and explore more states.",
+            "c": "To manage and reduce the exponentially growing state space and time complexity of NP problems.",
+            "d": "To eliminate the need for any domain knowledge or assumptions."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:03:39,378",
+        "seconds": 220,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=220s",
+        "explanation": "Explanation: The speaker clarifies that heuristics are used \"Whenever our state space grows in exponential power... Then over there time complexity is so much... which we generally call as NP problem... And to solve non polynomial problem... we have to use heuristic method somewhere.\" This is done to achieve a solution in polynomial time."
+    },
+    {
+        "question": "Which of the following statements accurately describes the characteristics of informed searching?",
+        "options": {
+            "a": "It is time-consuming and always guarantees an optimal solution.",
+            "b": "It is a quick solution that might compromise with optimality.",
+            "c": "It always requires exploring (n-1)! possibilities for n cities in TSP.",
+            "d": "It has higher time and space complexity compared to uninformed searching."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:05:15,922",
+        "seconds": 315,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=315s",
+        "explanation": "Explanation: The transcript mentions that informed search is a \"quick solution\" and that \"in this you will have to compromise with optimality.\" It can give a good solution but not necessarily an optimal one."
     }
 ]

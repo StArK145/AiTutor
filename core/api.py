@@ -733,86 +733,39 @@ from .utils import (
 )
 
 
-# core/api.py
-
-# ... other imports ...
-from .yt_processor import YouTubeProcessor # Make sure this is imported
-# ... rest of MultiVideoMCQAPI ...
-
 class MultiVideoMCQAPI(APIView):
-    permission_classes = [AllowAny] # You might want to change this to IsAuthenticated in production
+    permission_classes = [AllowAny]
 
     def post(self, request):
         video_urls = request.data.get("video_urls")
         if not video_urls or len(video_urls) != 4:
             return JsonResponse({"error": "Provide exactly 4 video URLs"}, status=400)
 
-        # Ensure all video_urls are just strings if they came in as objects
-        video_urls = [v.get("url", v) if isinstance(v, dict) else v for v in video_urls]
+        goal_distribution = [2, 3, 2, 3]
 
+        from .utils import get_transcript_chunks_from_youtube
 
-        goal_distribution = [2, 3, 2, 3] # This distribution seems off if you want 10 questions total (sum is 10). Let's keep it for now.
-
-        from .yt_processor import YouTubeProcessor # Moved to top-level import
-        yt_processor = YouTubeProcessor() # Instantiate once per request
-
-        def process_single_video_for_mcq(video_url_str):
+        def process_video(video_url):
             try:
-                video_id = yt_processor.extract_video_id(video_url_str)
-                video_info = yt_processor._get_video_info(video_id) # Private method, but it fetches info
-                if not video_info:
-                    print(f"[ERROR] Could not get video info for {video_url_str}")
+                # Extract URL from dict if needed
+                video_url_str = video_url["url"] if isinstance(video_url, dict) else video_url
+
+                transcript_chunks = get_transcript_chunks_from_youtube(video_url_str)
+                if not transcript_chunks:
                     return []
 
-                # Use the official API transcript (as parsed by yt_processor._parse_transcript)
-                transcript_raw_entries, language = yt_processor.get_transcript(video_id)
-                if not transcript_raw_entries:
-                    print(f"[ERROR] No transcript found for {video_url_str} via official API.")
-                    return []
-
-                # Flatten the transcript entries into a single string to mimic how utils.generate_mcqs_from_transcript expects it
-                # This requires adapting generate_mcqs_from_transcript if it needs chunked text with metadata.
-                # For simplicity, let's join and then let generate_mcqs_from_transcript handle its own text_splitter if it has one.
-                # Or better yet, reuse the parsing from yt_processor if possible.
-
-                # Best approach: create dummy Document objects if generate_mcqs_from_transcript needs them.
-                # Or, better: adapt generate_mcqs_from_transcript to take the direct list of entries from get_transcript
-                
-                # For now, let's create a format similar to what utils.parse_transcript returns.
-                # The generate_mcqs_from_transcript is expecting the format from utils.parse_transcript:
-                # [{'text': '...', 'start': float, 'start_seconds': float, 'time_range': '...'}]
-
-                formatted_chunks_for_mcq_gen = []
-                for entry in transcript_raw_entries:
-                    # Assuming yt_processor's transcript entries have 'text' and 'start'
-                    # We need to reconstruct the 'time_range' as expected by generate_mcqs_from_transcript
-                    start_time_srt = yt_processor._format_seconds_to_srt(entry['start'])
-                    formatted_chunks_for_mcq_gen.append({
-                        'text': entry['text'],
-                        'start': entry['start'],
-                        'start_seconds': entry['start'],
-                        'time_range': f"{start_time_srt} --> {start_time_srt}" # or more accurate end time if available
-                    })
-
-                # If no content, return early
-                if not formatted_chunks_for_mcq_gen:
-                    print(f"[ERROR] Formatted chunks for MCQ generation empty for {video_url_str}")
-                    return []
-
-                # Generate MCQs using the common utility function
-                # The function `generate_mcqs_from_transcript` is still in `core/utils.py` and uses gemini-2.5-flash
-                # This part remains mostly the same.
-                _, mcqs = generate_mcqs_from_transcript(formatted_chunks_for_mcq_gen, video_id)
+                video_id = get_video_id(video_url_str)
+                _, mcqs = generate_mcqs_from_transcript(transcript_chunks, video_id)
                 return mcqs or []
 
             except Exception as e:
-                print(f"[ERROR] Processing failed for {video_url_str}: {traceback.format_exc()}")
+                print(f"[ERROR] Processing failed for {video_url}: {str(e)}")
                 return []
 
-        # ... rest of the APIView (ThreadPoolExecutor and result aggregation) ...
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            all_mcqs = list(executor.map(process_single_video_for_mcq, video_urls))
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            all_mcqs = list(executor.map(process_video, video_urls))
 
         # Step 1: Try to assign original goal distribution
         combined_questions = []
@@ -824,7 +777,9 @@ class MultiVideoMCQAPI(APIView):
                 combined_questions.extend(to_add)
                 if len(mcqs) > goal:
                     leftovers.extend(mcqs[goal:])
-            # No 'else' block, because if mcqs is empty, nothing to do for this video.
+            else:
+                # This video failed or returned empty
+                continue
 
         # Step 2: Fill remaining questions from leftovers if total < 10
         while len(combined_questions) < 10 and leftovers:

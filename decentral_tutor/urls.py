@@ -36,6 +36,6 @@ urlpatterns = [
     
     # CSRF and frontend
     path('api/csrf/', get_csrf_token, name='api_csrf'),
-    # path('', TemplateView.as_view(template_name='index.html')),
-    # path('<path:path>', TemplateView.as_view(template_name='index.html')),
+    path('', TemplateView.as_view(template_name='index.html')),
+    path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]

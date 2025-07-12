@@ -119,8 +119,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend', 'build', 'static'),  # React static files
 ]
 
-STATICFILES_DIRS = []
-
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
