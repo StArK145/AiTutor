@@ -486,7 +486,7 @@ Format your response as:
         hh, mm, ss = hh_mm_ss.split(':')
         return int(hh) * 3600 + int(mm) * 60 + int(ss) + int(mmm)/1000
 
-    def get_video_info(self, video_id: str) -> Dict:
+    def _get_video_info(self, video_id: str) -> Dict:
         """Get video metadata with enhanced error handling"""
         try:
             self._rate_limit()
