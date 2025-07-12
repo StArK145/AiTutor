@@ -1,1 +1,142 @@
-[]
+[
+    {
+        "question": "What defines an \"agent\" in the context of autonomous systems, according to the video?",
+        "options": {
+            "a": "Something that can physically move.",
+            "b": "An entity that is programmed with all its behaviors ahead of time.",
+            "c": "An autonomous entity that observes its environment, chooses how to act based on observations, and whose actions change the environment's state.",
+            "d": "A system that only interacts with other agents."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:22,400",
+        "seconds": 22,
+        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=22s",
+        "explanation": "Explaination: The video states that an agent is \"something that is autonomous in the sense that it can observe the environment and then on its own choose how to act based on those observations,\" and importantly, \"its actions change the state of the environment.\" Physical movement is a possibility, but not a requirement, and agents can learn rather than being fully pre-programmed."
+    },
+    {
+        "question": "Which of the following best describes the different types of multi-agent systems discussed in the video?",
+        "options": {
+            "a": "Only cooperative agents working together for a common goal.",
+            "b": "Only adversarial agents competing against each other.",
+            "c": "Cooperative, adversarial, or a mix of both types of agents.",
+            "d": "Agents that only react to observations but do not affect the environment."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:01:23,600",
+        "seconds": 83,
+        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=83s",
+        "explanation": "Explaination: The video explicitly states that multi-agent systems can consist of \"different types of cooperative agents\" trying to work together, be \"adversarial where the entities are trying to maximize their own personal benefit,\" or even be \"a mix of both adversarial and cooperative agents.\""
+    },
+    {
+        "question": "According to the speaker, what was a key revelation from the DeepSeek R1 paper that generated significant excitement?",
+        "options": {
+            "a": "RL's ability to train models with 100x more parameters than supervised learning.",
+            "b": "RL could effectively train smaller models with less compute for powerful reasoning.",
+            "c": "RL fine-tuning was entirely new to the field of LLMs.",
+            "d": "DeepSeek discovered a method to eliminate the need for pre-training in LLMs."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:00:30,599",
+        "seconds": 30,
+        "youtube_url": "https://youtu.be/someVideoID?t=30s",
+        "explanation": "Explanation: The speaker states that DeepSeek was able to train a very powerful reasoning model by applying reinforcement learning and showed that a smaller model with less compute could work effectively with reinforcement learning, which got people very excited."
+    },
+    {
+        "question": "What significant finding regarding RLHF (Reinforcement Learning from Human Feedback) was highlighted by the 2022 ChatGPT paper?",
+        "options": {
+            "a": "RLHF completely replaced the need for large pre-trained models.",
+            "b": "Models trained with supervised learning were consistently preferred over RLHF models.",
+            "c": "A smaller model trained with RLHF was consistently preferred by people over a much larger model trained with only supervised learning.",
+            "d": "RLHF was only effective for models with over 100 billion parameters."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:01:30,360",
+        "seconds": 90,
+        "youtube_url": "https://youtu.be/someVideoID?t=90s",
+        "explanation": "Explanation: The transcript explicitly mentions that with RLHF, a model with only 1.5 billion parameters had outputs consistently preferred by people over a model 100 times the size that was trained with only supervised learning."
+    },
+    {
+        "question": "What was the main problem encountered with early approaches to RL fine-tuning of language models, as demonstrated by the music generation example?",
+        "options": {
+            "a": "The models became too complex and difficult to train.",
+            "b": "RL agents would trivially optimize the reward function at the expense of forgetting the original data distribution.",
+            "c": "It was impossible to incorporate music theory rules into the RL objective.",
+            "d": "The training process required an infinite amount of reward data."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:05:20,520",
+        "seconds": 320,
+        "youtube_url": "https://youtu.be/someVideoID?t=320s",
+        "explanation": "Explanation: The speaker illustrates this problem by showing that RL agents would \"trivially optimize the reward at the expense of kind of erasing everything it learned about the data distribution,\" leading to outputs like infinite C's in the music generation task."
+    },
+    {
+        "question": "What is the primary difference in the speaker's updated Pong environment compared to the first implementation described?",
+        "options": {
+            "a": "The ball moves at a constant speed throughout the game.",
+            "b": "It features two agents playing Pong against each other instead of a single pad against a wall.",
+            "c": "The game includes a human player controlling one of the paddles.",
+            "d": "The ball's speed decreases after each deflection."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:00:17,279",
+        "seconds": 17,
+        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=17s",
+        "explanation": "Explanation: The speaker explicitly states that contrary to the first implementation which had just a single pad against a wall, the updated environment features two agents playing Pong against each other."
+    },
+    {
+        "question": "How does the ball's speed change during gameplay in the updated Pong environment?",
+        "options": {
+            "a": "It remains constant throughout the game.",
+            "b": "It decreases by 20% each time it hits a paddle.",
+            "c": "It increases by 20% each time an agent deflects it.",
+            "d": "It randomly increases or decreases at intervals."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:39,440",
+        "seconds": 39,
+        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=39s",
+        "explanation": "Explanation: The speaker mentions that the ball starts with a normal speed, but each time one agent deflects the ball, its speed increases by 20 percent."
+    },
+    {
+        "question": "What is the main contribution of the paper \"Social Influence as Intrinsic Motivation for Multi-Agent Deep Reinforcement Learning\"?",
+        "options": {
+            "a": "Proposing a new algorithm for single-agent reinforcement learning.",
+            "b": "Introducing social influence as an additional reward to encourage cooperation in multi-agent systems.",
+            "c": "Developing new benchmarks for multi-agent competitive games.",
+            "d": "Proving that centralized training is always superior to independent learning."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:01:08,560",
+        "seconds": 68,
+        "youtube_url": "https://youtu.be/u6-git6j1v8?t=68s",
+        "explanation": "Explanation: The presenter explicitly states that the paper uses \"social influence as an additional reward to encourage agents to learn to cooperate not to be selfish,\" which encapsulates its core contribution."
+    },
+    {
+        "question": "According to the presentation, what is a key characteristic of a \"social dilemma\" in the context of multi-agent reinforcement learning?",
+        "options": {
+            "a": "All agents always achieve their individual maximum reward through selfish actions.",
+            "b": "Agents learn to ignore collective goals and only focus on individual survival.",
+            "c": "An individual must pay a personal cost to provide a resource that is shared by all, leading to potential suboptimal collective outcomes.",
+            "d": "The problem can only be solved with explicit communication channels between agents."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:07:14,880",
+        "seconds": 434,
+        "youtube_url": "https://youtu.be/u6-git6j1v8?t=434s",
+        "explanation": "Explanation: The presenter defines the social dilemma in the \"cleanup\" benchmark by saying, \"any individual must pay a personal cost in order to provide a resource that is shared by all.\" This highlights the conflict between individual gain and collective well-being."
+    },
+    {
+        "question": "What type of problem formulation is primarily focused on in this paper for multi-agent reinforcement learning?",
+        "options": {
+            "a": "Fully Observable Markov Decision Processes (FOMDPs).",
+            "b": "Partially Observable Markov Games (POMGs).",
+            "c": "Decentralized Markov Chains.",
+            "d": "Centralized Control Systems."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:01:58,640",
+        "seconds": 118,
+        "youtube_url": "https://youtu.be/u6-git6j1v8?t=118s",
+        "explanation": "Explanation: The presenter clearly states, \"in this paper we we focus on the this partially observable marker for games.\""
+    }
+]
