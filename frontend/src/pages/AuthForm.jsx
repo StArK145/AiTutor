@@ -199,18 +199,18 @@ const AuthForm = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-indigo-700/5 animate-pulse"></div>
       </div>
 
-      <div className="relative h-screen flex items-center justify-center p-4 overflow-hidden">
+      <div className="relative h-screen flex items-center justify-center p-4 overflow-auto">
 
-  <div className={`w-full max-w-[800px] h-[800px] overflow-hidden transition-all duration-1000 rounded-3xl ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+  <div className={`w-full max-w-[800px] min-h-screen lg:h-[800px] overflow-hidden transition-all duration-1000 rounded-3xl ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
 
 
           {/* Main Container - Horizontal Layout */}
-          <div className="bg-gradient-to-br from-gray-800/90 to-slate-900/90 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-sm border border-gray-700/50">
+          <div className="bg-gradient-to-br from-gray-800/90 to-slate-900/90 rounded-3xl shadow-2xl overflow-auto backdrop-blur-sm border border-gray-700/50">
             <div className="grid lg:grid-cols-2 min-h-[600px]">
 
 
               {/* Left Side - Branding & Features */}
-              <div className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-700/20 p-4 lg:p-6 flex flex-col justify-center relative overflow-hidden">
+              <div className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-700/20 p-4 lg:p-6 flex flex-col justify-center relative overflow-auto">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-700/10 animate-pulse"></div>
 
                 <div className="relative z-10">
