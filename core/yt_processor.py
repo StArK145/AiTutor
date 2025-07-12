@@ -514,15 +514,23 @@ Format your response as:
             logger.error(f"Video info error: {str(e)}")
             return {}
 
+    # core/yt_processor.py - _parse_duration method
     def _parse_duration(self, duration: str) -> int:
-        """Convert ISO 8601 duration to seconds"""
-        time_delta = timedelta()
-        if 'H' in duration:
-            time_delta += timedelta(hours=int(duration.split('H')[0][2:]))
-            duration = duration.split('H')[1]
-        if 'M' in duration:
-            time_delta += timedelta(minutes=int(duration.split('M')[0]))
-            duration = duration.split('M')[1]
-        if 'S' in duration:
-            time_delta += timedelta(seconds=int(duration.split('S')[0]))
-        return int(time_delta.total_seconds())
+        """
+        Convert ISO 8601 duration string (e.g., PT1H30M15S, PT5M) to total seconds.
+        Handles cases like PT19M, PT10S, PT1H, etc., by correctly extracting numbers.
+        """
+        total_seconds = 0
+        # Regular expressions to find hours, minutes, and seconds
+        hours_match = re.search(r'(\d+)H', duration)
+        minutes_match = re.search(r'(\d+)M', duration)
+        seconds_match = re.search(r'(\d+)S', duration)
+
+        if hours_match:
+            total_seconds += int(hours_match.group(1)) * 3600
+        if minutes_match:
+            total_seconds += int(minutes_match.group(1)) * 60
+        if seconds_match:
+            total_seconds += int(seconds_match.group(1))
+            
+        return total_seconds
