@@ -3,6 +3,7 @@ import re
 import json
 import hashlib
 import logging
+import time
 from typing import List, Dict, Optional, Union
 from yt_dlp import YoutubeDL
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -20,8 +21,18 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import json
 
-# Disable yt-dlp logger to suppress ffmpeg warnings
-logging.getLogger('yt_dlp').setLevel(logging.ERROR)
+import os
+from typing import List, Dict, Tuple, Optional
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+import json
+from datetime import datetime, timedelta
+import hashlib
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from googleapiclient.discovery import build
 
@@ -34,6 +45,9 @@ class YouTubeProcessor:
         self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         self.supported_languages = ['en', 'hi']  # English and Hindi (English first)
         self.transcript_cache = {}
+        self.last_request_time = None
+        self.request_count = 0
+        self.MAX_REQUESTS_PER_MINUTE = 50  # YouTube API quota limit
 
     @staticmethod
     def clean_text(text: str) -> str:
@@ -100,17 +114,36 @@ class YouTubeProcessor:
         video_id = YouTubeProcessor.extract_video_id(video_url)
         return f"https://www.youtube.com/watch?v={video_id}&t={int(timestamp)}s"
 
-    def get_transcript(self, video_id: str) -> Union[List[Dict], None]:
+    def _rate_limit(self):
+        """Handle API rate limiting"""
+        now = datetime.now()
+        if self.last_request_time and (now - self.last_request_time) < timedelta(seconds=60):
+            self.request_count += 1
+            if self.request_count >= self.MAX_REQUESTS_PER_MINUTE:
+                wait_time = 60 - (now - self.last_request_time).seconds
+                logger.warning(f"Rate limit reached. Waiting {wait_time} seconds...")
+                time.sleep(wait_time)
+                self.request_count = 0
+                self.last_request_time = datetime.now()
+        else:
+            self.last_request_time = now
+            self.request_count = 1
+
+
+    def get_transcript(self, video_id: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """
-        Get transcript using YouTube Data API only
+        Get transcript using YouTube Data API with enhanced error handling
         Returns:
             tuple: (transcript_data, language_code) or (None, None) if not available
         """
         # Check cache first
-        if video_id in self.transcript_cache:
-            return self.transcript_cache[video_id]
+        cache_key = hashlib.md5(video_id.encode()).hexdigest()
+        if cache_key in self.transcript_cache:
+            return self.transcript_cache[cache_key]
 
         try:
+            self._rate_limit()
+            
             # Step 1: List available caption tracks
             captions = self.youtube.captions().list(
                 part="snippet",
@@ -118,50 +151,50 @@ class YouTubeProcessor:
             ).execute()
 
             if not captions.get('items'):
-                print(f"No captions available for video {video_id}")
+                logger.info(f"No captions available for video {video_id}")
                 return None, None
 
-            # Step 2: Find preferred language (English first, then Hindi)
-            preferred_languages = ['en', 'hi']
+            # Step 2: Find preferred language track
+            preferred_languages = ['en', 'hi']  # English first, then Hindi
             caption_track = None
             
             for lang in preferred_languages:
                 for item in captions['items']:
-                    if item['snippet']['language'] == lang:
+                    if item['snippet']['language'] == lang and item['snippet']['trackKind'] != 'asr':  # Prefer manual over auto-generated
                         caption_track = item
                         break
                 if caption_track:
                     break
 
             if not caption_track:
-                print(f"No supported language captions for video {video_id}")
+                logger.info(f"No supported language captions for video {video_id}")
                 return None, None
 
             # Step 3: Download the caption track
+            self._rate_limit()
             transcript = self.youtube.captions().download(
                 id=caption_track['id'],
                 tfmt='srt'  # SubRip format for timestamps
             ).execute()
 
             # Step 4: Parse and format the transcript
-            formatted_transcript = self._parse_api_transcript(
-                transcript,
-                caption_track['snippet']['language']
-            )
-
-            # Cache the result
-            self.transcript_cache[video_id] = (formatted_transcript, caption_track['snippet']['language'])
+            formatted_transcript = self._parse_transcript(transcript)
+            
+            # Cache the result for 1 hour
+            self.transcript_cache[cache_key] = (formatted_transcript, caption_track['snippet']['language'])
             
             return formatted_transcript, caption_track['snippet']['language']
 
         except HttpError as e:
             if e.resp.status == 403:
-                print("YouTube API quota exceeded")
+                logger.error("YouTube API quota exceeded")
+            elif e.resp.status == 404:
+                logger.error(f"Video or captions not found: {video_id}")
             else:
-                print(f"YouTube API error: {str(e)}")
+                logger.error(f"YouTube API HTTP error: {str(e)}")
             return None, None
         except Exception as e:
-            print(f"Unexpected error: {str(e)}")
+            logger.error(f"Unexpected error: {str(e)}")
             return None, None
 
     def load_youtube_transcript(self, video_url: str) -> List[Document]:
@@ -417,7 +450,7 @@ Format your response as:
             raise
 
 
-    def _parse_api_transcript(self, transcript: str, language: str) -> List[Dict]:
+    def _parse_transcript(self, transcript: str) -> List[Dict]:
         """Parse SRT formatted transcript into our standard format"""
         entries = []
         blocks = transcript.strip().split('\n\n')
@@ -435,8 +468,7 @@ Format your response as:
                 entries.append({
                     'text': text,
                     'start': start_time,
-                    'duration': 0,  # Will calculate below
-                    'language': language
+                    'duration': 0  # Will calculate below
                 })
         
         # Calculate durations
@@ -453,32 +485,44 @@ Format your response as:
         hh_mm_ss, mmm = time_str.split(',')
         hh, mm, ss = hh_mm_ss.split(':')
         return int(hh) * 3600 + int(mm) * 60 + int(ss) + int(mmm)/1000
-    
-    def _get_video_info(self, video_id: str) -> Dict:
-        """Get video metadata using YouTube API"""
-        response = self.youtube.videos().list(
-            part="snippet,contentDetails",
-            id=video_id
-        ).execute()
-        
-        if not response.get('items'):
-            raise Exception("Video not found")
+
+    def get_video_info(self, video_id: str) -> Dict:
+        """Get video metadata with enhanced error handling"""
+        try:
+            self._rate_limit()
+            response = self.youtube.videos().list(
+                part="snippet,contentDetails",
+                id=video_id
+            ).execute()
             
-        item = response['items'][0]
-        return {
-            'title': item['snippet']['title'],
-            'description': item['snippet']['description'],
-            'thumbnail': item['snippet']['thumbnails']['high']['url'],
-            'duration': self._parse_duration(item['contentDetails']['duration'])
-        }
-        
+            if not response.get('items'):
+                raise Exception("Video not found")
+                
+            item = response['items'][0]
+            return {
+                'title': item['snippet']['title'],
+                'description': item['snippet']['description'],
+                'thumbnail': item['snippet']['thumbnails']['high']['url'],
+                'duration': self._parse_duration(item['contentDetails']['duration']),
+                'channel': item['snippet']['channelTitle']
+            }
+            
+        except HttpError as e:
+            logger.error(f"Video info API error: {str(e)}")
+            return {}
+        except Exception as e:
+            logger.error(f"Video info error: {str(e)}")
+            return {}
+
     def _parse_duration(self, duration: str) -> int:
         """Convert ISO 8601 duration to seconds"""
-        return int(timedelta(
-            hours=int(duration[2:].split('H')[0]) if 'H' in duration else 0,
-            minutes=int(duration.split('H')[1].split('M')[0]) if 'H' in duration else 
-                     int(duration[2:].split('M')[0]) if 'M' in duration else 0,
-            seconds=int(duration.split('M')[1].split('S')[0]) if 'M' in duration else 
-                     int(duration.split('H')[1].split('S')[0]) if 'H' in duration else 
-                     int(duration[2:].split('S')[0]) if 'S' in duration else 0
-        ).total_seconds())
+        time_delta = timedelta()
+        if 'H' in duration:
+            time_delta += timedelta(hours=int(duration.split('H')[0][2:]))
+            duration = duration.split('H')[1]
+        if 'M' in duration:
+            time_delta += timedelta(minutes=int(duration.split('M')[0]))
+            duration = duration.split('M')[1]
+        if 'S' in duration:
+            time_delta += timedelta(seconds=int(duration.split('S')[0]))
+        return int(time_delta.total_seconds())
