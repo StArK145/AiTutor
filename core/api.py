@@ -811,7 +811,7 @@ class MultiVideoMCQAPI(APIView):
 
         # ... rest of the APIView (ThreadPoolExecutor and result aggregation) ...
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor:
             all_mcqs = list(executor.map(process_single_video_for_mcq, video_urls))
 
         # Step 1: Try to assign original goal distribution
