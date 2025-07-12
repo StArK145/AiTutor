@@ -1,142 +1,142 @@
 [
     {
-        "question": "What defines an \"agent\" in the context of autonomous systems, according to the video?",
+        "question": "What is a key distinguishing characteristic of Constraint Satisfaction Problems (CSPs) compared to other search techniques like uninformed or informed search?",
         "options": {
-            "a": "Something that can physically move.",
-            "b": "An entity that is programmed with all its behaviors ahead of time.",
-            "c": "An autonomous entity that observes its environment, chooses how to act based on observations, and whose actions change the environment's state.",
-            "d": "A system that only interacts with other agents."
+            "a": "CSPs primarily use tree or graph methods for problem exploration.",
+            "b": "CSPs rely heavily on heuristic functions for optimal solutions.",
+            "c": "The representation method in CSPs is totally different from state space representation.",
+            "d": "CSPs are exclusively used for problems with infinite variables and domains."
         },
         "correct_answer": "c",
-        "timestamp": "00:00:22,400",
-        "seconds": 22,
-        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=22s",
-        "explanation": "Explaination: The video states that an agent is \"something that is autonomous in the sense that it can observe the environment and then on its own choose how to act based on those observations,\" and importantly, \"its actions change the state of the environment.\" Physical movement is a possibility, but not a requirement, and agents can learn rather than being fully pre-programmed."
+        "timestamp": "00:59:565",
+        "seconds": 59,
+        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=59s",
+        "explanation": "Explanation: The video states that \"in constraint satisfaction, the way of representing is totally different\" compared to previous problems that used state space representation and explored problems using tree or graph methods."
     },
     {
-        "question": "Which of the following best describes the different types of multi-agent systems discussed in the video?",
+        "question": "According to the video, what are the three fundamental components used to represent any Constraint Satisfaction Problem (CSP)?",
         "options": {
-            "a": "Only cooperative agents working together for a common goal.",
-            "b": "Only adversarial agents competing against each other.",
-            "c": "Cooperative, adversarial, or a mix of both types of agents.",
-            "d": "Agents that only react to observations but do not affect the environment."
+            "a": "Variables, Solutions, and Rules",
+            "b": "Values, Decisions, and Conditions",
+            "c": "Vertices, Dimensions, and Choices",
+            "d": "Variables, Domains, and Constraints"
+        },
+        "correct_answer": "d",
+        "timestamp": "01:33:747",
+        "seconds": 93,
+        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=93s",
+        "explanation": "Explanation: The speaker explicitly states that each problem in CSP is represented with three components: V (set of variables), D (set of domains), and C (set of constraints)."
+    },
+    {
+        "question": "What is a key characteristic that distinguishes Constraint Satisfaction Problems (CSPs) from heuristic search techniques like informed search?",
+        "options": {
+            "a": "CSPs require the goal state to be specified beforehand.",
+            "b": "CSPs operate by explicitly discovering a predefined path to the goal.",
+            "c": "In CSPs, the goal state is not specified in advance and must be discovered based on specified constraints.",
+            "d": "CSPs are limited to problems where only numerical values are involved."
         },
         "correct_answer": "c",
-        "timestamp": "00:01:23,600",
-        "seconds": 83,
-        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=83s",
-        "explanation": "Explaination: The video explicitly states that multi-agent systems can consist of \"different types of cooperative agents\" trying to work together, be \"adversarial where the entities are trying to maximize their own personal benefit,\" or even be \"a mix of both adversarial and cooperative agents.\""
+        "timestamp": "00:01:17,930",
+        "seconds": 77,
+        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=77s",
+        "explanation": "Explanation: The video states that in heuristic search techniques, the goal state is already known, but in Constraint Satisfaction Problems, the goal state is not specified and must be discovered based on the given constraints."
     },
     {
-        "question": "According to the speaker, what was a key revelation from the DeepSeek R1 paper that generated significant excitement?",
+        "question": "According to the video, what are the three main components upon which Constraint Satisfaction Problems (CSPs) depend?",
         "options": {
-            "a": "RL's ability to train models with 100x more parameters than supervised learning.",
-            "b": "RL could effectively train smaller models with less compute for powerful reasoning.",
-            "c": "RL fine-tuning was entirely new to the field of LLMs.",
-            "d": "DeepSeek discovered a method to eliminate the need for pre-training in LLMs."
+            "a": "Nodes, Edges, and Paths",
+            "b": "Variables, Domains, and Constraints",
+            "c": "Scope, Relation, and Values",
+            "d": "Initial State, Intermediate States, and Goal State"
         },
         "correct_answer": "b",
-        "timestamp": "00:00:30,599",
-        "seconds": 30,
-        "youtube_url": "https://youtu.be/someVideoID?t=30s",
-        "explanation": "Explanation: The speaker states that DeepSeek was able to train a very powerful reasoning model by applying reinforcement learning and showed that a smaller model with less compute could work effectively with reinforcement learning, which got people very excited."
+        "timestamp": "00:03:50,709",
+        "seconds": 230,
+        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=230s",
+        "explanation": "Explanation: The video explicitly identifies the three main components of Constraint Satisfaction Problems as X (set of variables), D (set of domains), and C (set of constraints)."
     },
     {
-        "question": "What significant finding regarding RLHF (Reinforcement Learning from Human Feedback) was highlighted by the 2022 ChatGPT paper?",
+        "question": "What is the primary advantage of \"Intelligent Backtracking\" in Constraint Satisfaction Problems (CSPs) compared to simple backtracking?",
         "options": {
-            "a": "RLHF completely replaced the need for large pre-trained models.",
-            "b": "Models trained with supervised learning were consistently preferred over RLHF models.",
-            "c": "A smaller model trained with RLHF was consistently preferred by people over a much larger model trained with only supervised learning.",
-            "d": "RLHF was only effective for models with over 100 billion parameters."
+            "a": "It restarts the entire problem-solving process from the initial state upon encountering an error.",
+            "b": "It only allows backtracking when numerical errors occur, not logical ones.",
+            "c": "It intelligently backtracks to the specific step where the error likely originated, rather than the immediately preceding step or the beginning.",
+            "d": "It automatically solves the problem without requiring any backtracking."
         },
         "correct_answer": "c",
-        "timestamp": "00:01:30,360",
-        "seconds": 90,
-        "youtube_url": "https://youtu.be/someVideoID?t=90s",
-        "explanation": "Explanation: The transcript explicitly mentions that with RLHF, a model with only 1.5 billion parameters had outputs consistently preferred by people over a model 100 times the size that was trained with only supervised learning."
+        "timestamp": "00:07:39,949",
+        "seconds": 459,
+        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=459s",
+        "explanation": "Explanation: The video explains that intelligent backtracking allows the system to backtrack directly to the specific step where the mistake was made, rather than having to restart from the beginning or just the immediately previous step, which is characteristic of simple backtracking."
     },
     {
-        "question": "What was the main problem encountered with early approaches to RL fine-tuning of language models, as demonstrated by the music generation example?",
+        "question": "What is the primary objective of a Constraint Satisfaction Problem (CSP) in the context discussed?",
         "options": {
-            "a": "The models became too complex and difficult to train.",
-            "b": "RL agents would trivially optimize the reward function at the expense of forgetting the original data distribution.",
-            "c": "It was impossible to incorporate music theory rules into the RL objective.",
-            "d": "The training process required an infinite amount of reward data."
+            "a": "To find the optimal path in a graph.",
+            "b": "To allocate values to variables such that all specified conditions are met.",
+            "c": "To develop new programming languages.",
+            "d": "To forecast future data trends using historical information."
         },
         "correct_answer": "b",
-        "timestamp": "00:05:20,520",
-        "seconds": 320,
-        "youtube_url": "https://youtu.be/someVideoID?t=320s",
-        "explanation": "Explanation: The speaker illustrates this problem by showing that RL agents would \"trivially optimize the reward at the expense of kind of erasing everything it learned about the data distribution,\" leading to outputs like infinite C's in the music generation task."
+        "timestamp": "03:57:439",
+        "seconds": 237,
+        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=237s",
+        "explanation": "Explanation: The video defines CSPs as problems in computer science, especially AI, where the goal is to assign values to variables from their respective domains in a way that satisfies a given set of constraints or conditions."
     },
     {
-        "question": "What is the primary difference in the speaker's updated Pong environment compared to the first implementation described?",
+        "question": "According to the speaker, what are the three fundamental components that constitute a Constraint Satisfaction Problem (CSP)?",
         "options": {
-            "a": "The ball moves at a constant speed throughout the game.",
-            "b": "It features two agents playing Pong against each other instead of a single pad against a wall.",
-            "c": "The game includes a human player controlling one of the paddles.",
-            "d": "The ball's speed decreases after each deflection."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:00:17,279",
-        "seconds": 17,
-        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=17s",
-        "explanation": "Explanation: The speaker explicitly states that contrary to the first implementation which had just a single pad against a wall, the updated environment features two agents playing Pong against each other."
-    },
-    {
-        "question": "How does the ball's speed change during gameplay in the updated Pong environment?",
-        "options": {
-            "a": "It remains constant throughout the game.",
-            "b": "It decreases by 20% each time it hits a paddle.",
-            "c": "It increases by 20% each time an agent deflects it.",
-            "d": "It randomly increases or decreases at intervals."
+            "a": "Algorithms, data structures, and computational complexity.",
+            "b": "Input variables, output results, and processing time.",
+            "c": "Variables, a domain for each variable, and a set of constraints.",
+            "d": "Functions, procedures, and memory allocation."
         },
         "correct_answer": "c",
-        "timestamp": "00:00:39,440",
-        "seconds": 39,
-        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=39s",
-        "explanation": "Explanation: The speaker mentions that the ball starts with a normal speed, but each time one agent deflects the ball, its speed increases by 20 percent."
+        "timestamp": "04:05:560",
+        "seconds": 245,
+        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=245s",
+        "explanation": "Explanation: The speaker explicitly states that a CSP consists of variables, a domain for each variable (the range of possible values), and a set of constraints that define the allowable combinations of values."
     },
     {
-        "question": "What is the main contribution of the paper \"Social Influence as Intrinsic Motivation for Multi-Agent Deep Reinforcement Learning\"?",
+        "question": "What is considered the biggest application for Artificial Intelligence, as stated in the video?",
         "options": {
-            "a": "Proposing a new algorithm for single-agent reinforcement learning.",
-            "b": "Introducing social influence as an additional reward to encourage cooperation in multi-agent systems.",
-            "c": "Developing new benchmarks for multi-agent competitive games.",
-            "d": "Proving that centralized training is always superior to independent learning."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:01:08,560",
-        "seconds": 68,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=68s",
-        "explanation": "Explanation: The presenter explicitly states that the paper uses \"social influence as an additional reward to encourage agents to learn to cooperate not to be selfish,\" which encapsulates its core contribution."
-    },
-    {
-        "question": "According to the presentation, what is a key characteristic of a \"social dilemma\" in the context of multi-agent reinforcement learning?",
-        "options": {
-            "a": "All agents always achieve their individual maximum reward through selfish actions.",
-            "b": "Agents learn to ignore collective goals and only focus on individual survival.",
-            "c": "An individual must pay a personal cost to provide a resource that is shared by all, leading to potential suboptimal collective outcomes.",
-            "d": "The problem can only be solved with explicit communication channels between agents."
+            "a": "Data Analysis",
+            "b": "Machine Learning",
+            "c": "Problems Solving",
+            "d": "Natural Language Processing"
         },
         "correct_answer": "c",
-        "timestamp": "00:07:14,880",
-        "seconds": 434,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=434s",
-        "explanation": "Explanation: The presenter defines the social dilemma in the \"cleanup\" benchmark by saying, \"any individual must pay a personal cost in order to provide a resource that is shared by all.\" This highlights the conflict between individual gain and collective well-being."
+        "timestamp": "00:00:09,280",
+        "seconds": 9,
+        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=9s",
+        "explanation": "Explanation: The speaker explicitly states at the beginning of the video that \"Problem solving is the biggest application for Artificial Intelligence.\""
     },
     {
-        "question": "What type of problem formulation is primarily focused on in this paper for multi-agent reinforcement learning?",
+        "question": "According to the video, through which two main components does an AI agent interact with its environment?",
         "options": {
-            "a": "Fully Observable Markov Decision Processes (FOMDPs).",
-            "b": "Partially Observable Markov Games (POMGs).",
-            "c": "Decentralized Markov Chains.",
-            "d": "Centralized Control Systems."
+            "a": "Input and Output",
+            "b": "Perceptors and Actuators",
+            "c": "Senses and Effectors",
+            "d": "Sensors and Motors"
         },
-        "correct_answer": "b",
-        "timestamp": "00:01:58,640",
-        "seconds": 118,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=118s",
-        "explanation": "Explanation: The presenter clearly states, \"in this paper we we focus on the this partially observable marker for games.\""
+        "correct_answer": "c",
+        "timestamp": "00:00:33,879",
+        "seconds": 33,
+        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=33s",
+        "explanation": "Explanation: The video explains that an agent perceives its environment through \"senses\" and acts upon the environment using \"effectors.\""
+    },
+    {
+        "question": "What are the two main strategies mentioned in the video for solving problems in Artificial Intelligence?",
+        "options": {
+            "a": "State-space Search and Goal-based Search",
+            "b": "Optimal Search and Sub-optimal Search",
+            "c": "Uninformed Search and Informed Search",
+            "d": "Breadth-First Search and Depth-First Search"
+        },
+        "correct_answer": "c",
+        "timestamp": "00:08:07,849",
+        "seconds": 487,
+        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=487s",
+        "explanation": "Explanation: The speaker states, \"There are two strategies to solve problems: first is Uninformed Search... and second is Informed Search.\""
     }
 ]

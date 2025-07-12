@@ -40,20 +40,23 @@ Directory structure:
     │       ├── index.css
     │       ├── main.jsx
     │       ├── components/
+    │       │   ├── LoadingScreen.jsx
     │       │   ├── Model1history.jsx
     │       │   ├── Model2history.jsx
     │       │   ├── Model2results.jsx
     │       │   ├── MultiMCQForm.jsx
+    │       │   ├── QuizLoading.jsx
     │       │   ├── Resources.jsx
     │       │   ├── ResultsView.jsx
     │       │   └── Scanner.jsx
     │       ├── contexts/
-    │       │   └── AuthContext.jsx
+    │       │   └── QuizContext.jsx
     │       ├── pages/
     │       │   ├── AuthForm.jsx
     │       │   ├── Dashboard.jsx
     │       │   ├── Home.jsx
-    │       │   └── NotFound.jsx
+    │       │   ├── NotFound.jsx
+    │       │   └── Quiz.jsx
     │       └── utils/
     │           ├── api.js
     │           ├── contentScan.js
@@ -109,19 +112,7 @@ if __name__ == '__main__':
 ================================================
 FILE: requirements.txt
 ================================================
-firebase-admin==6.9.0
-youtube_search==2.1.2
-tavily-python==0.7.0
-python-dotenv==1.0.1
-Django==5.2.4
-youtube_transcript_api==1.1.0
-google-generativeai==0.8.4
-django-cors-headers==4.7.0
-djangorestframework==3.16.0
-djangorestframework_simplejwt==5.5.0
-groq==0.29.0
-testtttttttttttt
-
+[Non-text file]
 
 
 ================================================
@@ -2756,6 +2747,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware
@@ -3090,6 +3082,7 @@ import Home from './pages/Home';
 import AuthForm from './pages/AuthForm';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
+import Quiz from './pages/Quiz';
 
 
 function App() {
@@ -3098,6 +3091,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard/*" element={<Dashboard/>} />
+        <Route path="/quiz" element={<Quiz />} />
 
         <Route path="/auth" element={<AuthForm />} />
         <Route path="*" element={<NotFound />} />
@@ -3126,16 +3120,231 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
+import { QuizProvider } from "./contexts/QuizContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
+      <QuizProvider>
         <App />
-    
+      </QuizProvider>
     </BrowserRouter>
   </StrictMode>
 );
 
+
+
+================================================
+FILE: frontend/src/components/LoadingScreen.jsx
+================================================
+import React, { useState, useEffect } from "react";
+import { 
+  BookOpen, 
+  Brain, 
+  Sparkles, 
+  Loader2, 
+  Target, 
+  Zap,
+  Lightbulb,
+  Cpu
+} from "lucide-react";
+
+function LoadingScreen() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const loadingSteps = [
+    { 
+      icon: Brain, 
+      text: "Initializing AI Learning Engine...", 
+      description: "Preparing personalized education algorithms",
+      color: "from-blue-500 to-cyan-500" 
+    },
+    { 
+      icon: BookOpen, 
+      text: "Analyzing Educational Content...", 
+      description: "Processing vast knowledge databases",
+      color: "from-purple-500 to-pink-500" 
+    },
+    { 
+      icon: Target, 
+      text: "Customizing Learning Path...", 
+      description: "Tailoring content to your needs",
+      color: "from-emerald-500 to-teal-500" 
+    },
+    { 
+      icon: Sparkles, 
+      text: "Generating Smart Resources...", 
+      description: "Creating your personalized study materials",
+      color: "from-orange-500 to-red-500" 
+    },
+    { 
+      icon: Zap, 
+      text: "Finalizing AI Experience...", 
+      description: "Almost ready for your learning journey",
+      color: "from-indigo-500 to-purple-500" 
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 2;
+      });
+    }, 100);
+
+    const stepInterval = setInterval(() => {
+      setCurrentStep(prev => {
+        if (prev >= loadingSteps.length - 1) {
+          clearInterval(stepInterval);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(stepInterval);
+    };
+  }, []);
+
+  const FloatingIcon = ({ icon: Icon, delay, size = "w-6 h-6" }) => (
+    <div 
+      className={`absolute text-white/30 animate-pulse`}
+      style={{
+        animationDelay: `${delay}s`,
+        animationDuration: '3s',
+        top: `${Math.random() * 80 + 10}%`,
+        left: `${Math.random() * 80 + 10}%`,
+      }}
+    >
+      <Icon className={size} />
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen min-w-screen bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-slate-800/80 backdrop-blur-sm flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <FloatingIcon 
+            key={i} 
+            icon={[BookOpen, Brain, Lightbulb, Cpu, Sparkles][i % 5]} 
+            delay={i * 0.3}
+            size={i % 3 === 0 ? "w-8 h-8" : "w-6 h-6"}
+          />
+        ))}
+      </div>
+
+      {/* Gradient Orbs */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+      {/* Main Loading Container */}
+      <div className="relative z-10 bg-gradient-to-br from-gray-800/80 via-slate-800/80 to-gray-900/80 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl border border-gray-700/50 max-w-xl w-full mx-auto">
+        
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-full p-3 shadow-lg">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+              AI Learning Hub
+            </h1>
+          </div>
+          <p className="text-gray-300 text-sm font-medium">
+            Preparing your personalized educational experience
+          </p>
+        </div>
+
+        {/* Main Loading Animation */}
+        <div className="flex flex-col items-center mb-4">
+          <div className="relative mb-4">
+            {/* Spinning Outer Ring */}
+            <div className="w-20 h-20 border-3 border-gray-700 rounded-full animate-spin border-t-transparent">
+              <div className={`w-full h-full rounded-full bg-gradient-to-r ${loadingSteps[currentStep].color} p-1`}>
+                <div className="w-full h-full bg-gray-800 rounded-full flex items-center justify-center">
+                  {React.createElement(loadingSteps[currentStep].icon, {
+                    className: "w-8 h-8 text-white animate-pulse"
+                  })}
+                </div>
+              </div>
+            </div>
+            
+            {/* Pulsing Inner Glow */}
+            <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${loadingSteps[currentStep].color} opacity-20 animate-ping`}></div>
+          </div>
+        </div>
+
+        {/* Current Step Info */}
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-bold text-white mb-1">
+            {loadingSteps[currentStep].text}
+          </h2>
+          <p className="text-gray-400 text-sm font-medium">
+            {loadingSteps[currentStep].description}
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-medium text-gray-400">Progress</span>
+            <span className="text-xs font-bold text-white">{Math.round(progress)}%</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+            <div 
+              className={`h-full bg-gradient-to-r ${loadingSteps[currentStep].color} transition-all duration-300 ease-out rounded-full relative`}
+              style={{ width: `${progress}%` }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Step Indicators */}
+        <div className="flex justify-center space-x-3">
+          {loadingSteps.map((step, index) => (
+            <div
+              key={index}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index <= currentStep
+                  ? `bg-gradient-to-r ${step.color} shadow-lg`
+                  : 'bg-gray-600'
+              }`}
+            >
+              {index === currentStep && (
+                <div className={`w-full h-full rounded-full bg-gradient-to-r ${step.color} animate-pulse`}></div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Fun Facts */}
+        <div className="mt-4 text-center">
+          <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-3 border border-blue-500/20">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Lightbulb className="w-4 h-4 text-yellow-400" />
+              <span className="text-xs font-bold text-yellow-400">AI Fact</span>
+            </div>
+            <p className="text-gray-300 text-xs">
+              Our AI processes over 10 million educational resources to find the perfect content for you!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LoadingScreen;
 
 
 ================================================
@@ -3149,7 +3358,7 @@ import {
 import { Clock, BookOpen, Calendar, Hash, Trash2 } from "lucide-react";
 import { fetchChapterResources } from "../utils/contentScan";
 
-function Model1history( {setFromHistory,setChapterHistory}) {
+function Model1history( {setFromHistory,setChapterHistory, loading, setLoading} ) {
   const [history, setHistory] = useState([]);
   const loadHistory = async () => {
     try {
@@ -3173,109 +3382,147 @@ function Model1history( {setFromHistory,setChapterHistory}) {
   };
 
   useEffect(() => {
+    setTimeout(() => {
     loadHistory();
+    }, 1000);
   }, []);
 
-
-const handleClick = async (item) => {
-  console.log("Clicked ID:", item.id);
-  try {
-    const resources = await fetchChapterResources(item.id); // ðŸ‘ˆ API call
-    setChapterHistory(resources); // ðŸ‘ˆ Update state with fetched resources
-    setFromHistory(true); // ðŸ‘ˆ Set fromHistory to true
-
-    console.log("Fetched resources:", resources);
-  } catch (err) {
-    console.error("Failed to fetch chapter resources:", err);
-    alert("Failed to load resources for this chapter. Try again.");
-  }
-};
-
-
+  const handleClick = async (item) => {
+     if (loading) return;
+    setLoading(true);
+    try {
+      const resources = await fetchChapterResources(item.id);
+      setChapterHistory(resources);
+      setFromHistory(true);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch chapter resources:", err);
+      alert("Failed to load resources for this chapter. Try again.");
+    }
+  };
 
   return (
-    <div className="mt-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg">
-          <Clock className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-            Chapter Generation History
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            View your previously generated chapter outlines
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6">
-        {history.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 text-lg">
-              No history available yet.
-            </p>
-            <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">
-              Generate your first chapter outline to see it here.
-            </p>
+    <div className="min-h-screen p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 shadow-2xl border border-blue-400/20">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
+              <Clock className="w-8 h-8 text-blue-100" />
+            </div>
+            <div>
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                Chapter Generation History
+              </h2>
+              <p className="text-blue-100 text-lg font-medium">
+                Discover your previously generated AI-powered chapter outlines
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {history.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => handleClick(item)}
-                className="cursor-pointer p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-200"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 mb-2">
-                      {item.topic}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>Grade: {item.grade}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Hash className="w-4 h-4" />
-                        <span>{item.chapter_count} chapters</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        <span>
-                          {new Date(item.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+        </div>
 
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item.id);
-                    }}
-                    className="p-2 text-red-500 hover:text-red-700 transition"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+        {/* Content Section */}
+        <div className=" rounded-3xl overflow-hidden ">
+          <div className="p-8">
+            {history.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="bg-gradient-to-br from-gray-700 to-slate-800 rounded-full p-6 w-24 h-24 mx-auto mb-6 shadow-lg">
+                  <BookOpen className="w-12 h-12 text-blue-400 mx-auto" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-100 mb-4">
+                  No AI Learning History Yet
+                </h3>
+                <p className="text-gray-400 text-lg font-medium mb-2">
+                  Your personalized chapter outlines will appear here
+                </p>
+                <p className="text-gray-500 text-sm">
+                  Generate your first AI-powered chapter outline to get started
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-3 shadow-lg">
+                    <BookOpen className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">
+                      AI-Generated Learning Paths
+                    </h3>
+                    <p className="text-gray-300 font-medium">
+                      Click on any entry to explore curated resources
+                    </p>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-lg text-white px-5 py-2 rounded-full font-bold border border-white/30 ml-auto">
+                    {history.length} entries
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {history.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleClick(item)}
+                      className="group relative bg-gradient-to-br from-gray-700 to-slate-800 hover:from-gray-600 hover:to-slate-700 rounded-2xl p-6 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:shadow-xl border border-gray-600/50 hover:border-indigo-500/50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-xl p-2 shadow-lg">
+                              <BookOpen className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="font-bold text-xl text-gray-100 group-hover:text-indigo-300 transition-colors leading-relaxed">
+                              {item.topic}
+                            </h3>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-2 text-gray-300 bg-gray-800/50 rounded-xl px-3 py-2">
+                              <Calendar className="w-4 h-4 text-emerald-400" />
+                              <span className="font-medium">Grade: {item.grade}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-300 bg-gray-800/50 rounded-xl px-3 py-2">
+                              <Hash className="w-4 h-4 text-blue-400" />
+                              <span className="font-medium">{item.chapter_count} chapters</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-gray-400 mt-4 bg-gray-800/30 rounded-xl px-3 py-2">
+                            <Clock className="w-4 h-4 text-purple-400" />
+                            <span className="text-sm font-medium">
+                              {new Date(item.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => {
+                             if (loading) return;
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
+                          className="flex-shrink-0 p-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 rounded-xl transition-all duration-200 border border-red-500/30 hover:border-red-500/50 shadow-lg"
+                          title="Delete AI Generation"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                      
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/10 group-hover:to-indigo-500/20 rounded-2xl transition-all duration-300" />
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
 export default Model1history;
-
 
 
 ================================================
@@ -3285,8 +3532,7 @@ import React, { useState, useEffect } from "react";
 import { fetchUserPDFList } from "../utils/contentScan";
 import { History, FileText, Youtube, Clock, MessageSquare } from "lucide-react";
 import { deletePdf } from "../utils/contentScan"; // Import the delete function
-import { fetchYouTubeHistory, deleteYoutubeVideo } from "../utils/contentScan"; // Import YouTube functions
-
+import { fetchYouTubeHistory, deleteYoutubeVideo, fetchPDFConversationHistory } from "../utils/contentScan"; // Import YouTube functions
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -3333,6 +3579,7 @@ const Model2history = () => {
   const [pdfHistory, setPdfHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ytHistory, setYtHistory] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null); // Store selected PDF or YT video
 
   // Fetch PDF upload history
   useEffect(() => {
@@ -3388,6 +3635,17 @@ const Model2history = () => {
     } catch (err) {
       alert("Error: " + err.message);
     }
+  };
+
+ const handlePdfClick = (pdf) => {
+  alert("Viewing conversation history for PDFs is not available yet.");
+};
+
+
+
+  const handleYouTubeClick = (video) => {
+    alert("Viewing conversation history for YouTube is not available yet.");
+    // You can navigate, show a modal, etc.
   };
 
   return (
@@ -3513,7 +3771,8 @@ const Model2history = () => {
               {pdfHistory.map((pdf) => (
                 <div
                   key={pdf.id}
-                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                  onClick={() => handlePdfClick(pdf)}
+                  className="cursor-pointer p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -3549,7 +3808,10 @@ const Model2history = () => {
 
                       {/* Delete Button */}
                       <button
-                        onClick={() => handleDelete(pdf.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(pdf.id);
+                        }}
                         className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                       >
                         Delete
@@ -3572,7 +3834,8 @@ const Model2history = () => {
             {ytHistory.map((video) => (
               <div
                 key={video.id}
-                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                onClick={() => handleYouTubeClick(video)}
+                className="cursor-pointer p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -3606,16 +3869,11 @@ const Model2history = () => {
                   </div>
 
                   <div className="ml-4 flex flex-col items-end gap-2">
-                    <a
-                      href={`https://youtube.com/watch?v=${video.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      Watch
-                    </a>
                     <button
-                      onClick={() => handleDeleteYT(video.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteYT(video.id);
+                      }}
                       className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                     >
                       Delete
@@ -4055,6 +4313,160 @@ export default MultiMCQForm;
 
 
 ================================================
+FILE: frontend/src/components/QuizLoading.jsx
+================================================
+import React from "react";
+import { 
+  Brain, 
+  Sparkles, 
+  BookOpen, 
+  Target, 
+  Zap, 
+  Clock,
+  CheckCircle,
+  Loader2
+} from "lucide-react";
+
+const QuizLoading = () => {
+  return (
+    <div className="min-h-screen p-6 overflow-x-hidden">
+      <div className="max-w-3xl mx-auto space-y-8">
+
+        {/* Main Loading Section */}
+        <div className="bg-gradient-to-br from-gray-800 via-slate-800 to-gray-900 rounded-3xl shadow-2xl border border-gray-700/50 overflow-hidden">
+          <div className=" p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-3 shadow-lg">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  AI is Generating Your Quiz
+                </h2>
+                <p className="text-purple-100 font-medium">
+                  Please wait while we analyze your videos and create intelligent questions
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {/* Central Loading Animation */}
+            <div className="flex flex-col items-center justify-center space-y-6 mb-8">
+              <div className="relative">
+                {/* Outer rotating ring */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 rounded-full p-1 animate-spin">
+                  <div className="bg-gray-800 rounded-full w-20 h-20"></div>
+                </div>
+                
+                {/* Inner brain icon */}
+                <div className="relative bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-600 rounded-full p-5 shadow-lg">
+                  <Brain className="w-10 h-10 text-white animate-pulse" />
+                </div>
+                
+                {/* Floating sparkles */}
+                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2 animate-bounce">
+                  <Sparkles className="w-3 h-3 text-white" />
+                </div>
+                <div className="absolute -bottom-2 -left-2 bg-gradient-to-r from-pink-400 to-red-500 rounded-full p-2 animate-bounce delay-75">
+                  <Zap className="w-3 h-3 text-white" />
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-100 mb-2">
+                  Crafting Your Personalized Quiz
+                </h3>
+                <p className="text-gray-300 font-medium">
+                  Our AI is analyzing video content to create meaningful questions just for you
+                </p>
+              </div>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="group bg-gradient-to-r from-gray-700 to-slate-800 rounded-xl p-4 border border-gray-600/50 transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-2 shadow-lg">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-gray-100">Analyzing Content</h4>
+                  </div>
+                  <div className="bg-green-500/20 rounded-full p-1">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  </div>
+                </div>
+                <p className="text-gray-300 font-medium text-sm">
+                  Processing video transcripts and identifying key learning points
+                </p>
+              </div>
+
+              <div className="group bg-gradient-to-r from-gray-700 to-slate-800 rounded-xl p-4 border border-gray-600/50 transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-2 shadow-lg">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-gray-100">Creating Questions</h4>
+                  </div>
+                  <div className="bg-blue-500/20 rounded-full p-1">
+                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                  </div>
+                </div>
+                <p className="text-gray-300 font-medium text-sm">
+                  Generating intelligent multiple-choice questions with explanations
+                </p>
+              </div>
+
+              <div className="group bg-gradient-to-r from-gray-700 to-slate-800 rounded-xl p-4 border border-gray-600/50 transform hover:scale-105 transition-all duration-300 opacity-60">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-2 shadow-lg">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-gray-100">Finalizing Quiz</h4>
+                  </div>
+                  <div className="bg-gray-500/20 rounded-full p-1">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+                <p className="text-gray-300 font-medium text-sm">
+                  Preparing your personalized learning experience
+                </p>
+              </div>
+            </div>
+
+            {/* Loading Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-xl p-3 border border-blue-500/30 text-center">
+                <div className="text-xl font-bold text-blue-300 mb-1">AI</div>
+                <div className="text-xs text-blue-200 font-medium">Powered</div>
+              </div>
+              <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl p-3 border border-purple-500/30 text-center">
+                <div className="text-xl font-bold text-purple-300 mb-1">âˆž</div>
+                <div className="text-xs text-purple-200 font-medium">Possibilities</div>
+              </div>
+              <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-xl p-3 border border-emerald-500/30 text-center">
+                <div className="text-xl font-bold text-emerald-300 mb-1">100%</div>
+                <div className="text-xs text-emerald-200 font-medium">Personalized</div>
+              </div>
+              <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 rounded-xl p-3 border border-orange-500/30 text-center">
+                <div className="text-xl font-bold text-orange-300 mb-1">âš¡</div>
+                <div className="text-xs text-orange-200 font-medium">Smart</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default QuizLoading;
+
+
+================================================
 FILE: frontend/src/components/Resources.jsx
 ================================================
 import React, { useState, useEffect, useContext } from "react";
@@ -4067,13 +4479,16 @@ import {
   Play,
   ExternalLink,
   Loader2,
+  ChevronDown,
+  ArrowRight,
+  Target,
+  Zap,
 } from "lucide-react";
 import ResultsView from "./ResultsView"; // Adjust the import path
 import { getFirebaseIdToken } from "../utils/firebase"; // Adjust the import path
 import Model1history from "./Model1history";
-import { AuthContext } from "../contexts/AuthContext";
 import { getCsrfToken } from "../utils/api"; // Adjust the import path
-
+import LoadingScreen from "./LoadingScreen"; // Adjust the import path
 
 function Resources() {
   const [topic, setTopic] = useState("");
@@ -4098,12 +4513,12 @@ function Resources() {
   const API_BASE = import.meta.env.VITE_API_BASE;
 
   const generateChapters = async () => {
+    if (loading) return;
     if (!topic.trim() || !grade.trim()) {
       setFormError("Please fill in both the topic and grade.");
       setChapters([]);
       return;
     }
-
 
     setLoading(true);
     try {
@@ -4186,149 +4601,216 @@ function Resources() {
 
     return res.data?.data?.websites || [];
   };
+  const getSelectedGradeOption = () => {
+    return gradeOptions.find((option) => option.value === grade);
+  };
 
- useEffect(() => {
-  if (fromHistory) {
-    const chapterNames = chapterHistory.map((item) => item.name);
-    setChapters(chapterNames);  // âœ… now chapters is just an array of strings
-    console.log("Chapter names:", chapterNames);
+  useEffect(() => {
+    if (fromHistory) {
+      const chapterNames = chapterHistory.map((item) => item.name);
+      setChapters(chapterNames); // âœ… now chapters is just an array of strings
+      console.log("Chapter names:", chapterNames);
 
-    setActiveTab("results");
-  }
-}, [fromHistory, chapterHistory]);
-
+      setActiveTab("results");
+    }
+  }, [fromHistory, chapterHistory]);
 
   return (
-    <div className="space-y-6">
-      {/* ---------------- TABÂ 1 : INPUT FORM ---------------- */}
-      {activeTab === "form" && (
-        <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6 space-y-6">
-          {/* header */}
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-              <BookOpen className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                AI Chapter Generator
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400">
-                Generate comprehensive chapter outlines for any topic
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen p-4">
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center">
+          <LoadingScreen />
+        </div>
+      )}
 
-          {/* Input Form */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Topic Input */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Topic
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Enter your topic (e.g., Machine Learning, History of Rome)"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                />
-                <Sparkles className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-              </div>
-            </div>
-
-            {/* Grade Level Select */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Academic Level
-              </label>
-              <div className="relative">
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 appearance-none cursor-pointer"
-                >
-                  <option value="">Select academic level</option>
-                  {gradeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.icon} {option.label}
-                    </option>
-                  ))}
-                </select>
-                <GraduationCap className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                <div className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Enhanced Form Tab */}
+        {activeTab === "form" && (
+          <div className="space-y-8">
+            {/* Main Form Card */}
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+              {/* Animated Header */}
+              <div className="relative bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 backdrop-blur-sm"></div>
+                <div className="relative flex items-center gap-4">
+                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
+                    <BookOpen className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-white">
+                      Create Your Learning Path
+                    </h2>
+                    <p className="text-white/90 text-lg mt-1">
+                      Generate comprehensive chapter outlines tailored to your
+                      level
+                    </p>
+                  </div>
                 </div>
+                {/* Floating decoration */}
+                <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-xl animate-pulse"></div>
+                <div className="absolute bottom-4 right-8 w-16 h-16 bg-white/10 rounded-full blur-lg animate-pulse"></div>
+              </div>
+
+              {/* Enhanced Form Content */}
+              <div className="p-8 space-y-8">
+                {/* Topic Input with Enhanced Styling */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5 text-blue-500" />
+                    <label className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                      What would you like to learn?
+                    </label>
+                  </div>
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      placeholder="Enter your topic (e.g., Machine Learning, History of Rome, Quantum Physics)"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      className="w-full p-4 pl-12 text-lg border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 group-hover:border-blue-300 dark:group-hover:border-blue-400"
+                    />
+                    <Sparkles className="absolute left-4 top-4 w-6 h-6 text-blue-500 group-focus-within:animate-pulse" />
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-focus-within:from-blue-500/5 group-focus-within:via-purple-500/5 group-focus-within:to-pink-500/5 transition-all duration-300 pointer-events-none"></div>
+                  </div>
+                </div>
+
+                {/* Grade Level Select with Enhanced Design */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-purple-500" />
+                    <label className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                      Choose your academic level
+                    </label>
+                  </div>
+                  <div className="relative group">
+                    <select
+                      value={grade}
+                      onChange={(e) => setGrade(e.target.value)}
+                      className="w-full p-4 pl-12 pr-12 text-lg border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 appearance-none cursor-pointer group-hover:border-purple-300 dark:group-hover:border-purple-400"
+                    >
+                      <option value="">Select your academic level</option>
+                      {gradeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.icon} {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <GraduationCap className="absolute left-4 top-4 w-6 h-6 text-purple-500 group-focus-within:animate-pulse" />
+                    <ChevronDown className="absolute right-4 top-4 w-6 h-6 text-slate-400 group-focus-within:text-purple-500 transition-colors duration-200" />
+                  </div>
+                </div>
+
+                {/* Selected Grade Preview */}
+                {grade && (
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-slate-200 dark:border-slate-600 transition-all duration-300">
+                    <div
+                      className={`w-3 h-3 rounded-full bg-gradient-to-r ${
+                        getSelectedGradeOption()?.color ||
+                        "from-blue-400 to-purple-500"
+                      }`}
+                    ></div>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Selected: {getSelectedGradeOption()?.icon}{" "}
+                      {getSelectedGradeOption()?.label}
+                    </span>
+                  </div>
+                )}
+
+                {/* Enhanced Error Display */}
+                {formError && (
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl transition-all duration-300">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 animate-pulse" />
+                    <p className="text-red-700 dark:text-red-400 font-medium">
+                      {formError}
+                    </p>
+                  </div>
+                )}
+
+                {/* Enhanced Generate Button */}
+                <button
+                  onClick={generateChapters}
+                  disabled={loading}
+                  className={`w-full font-bold py-4 px-8 rounded-xl text-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-offset-2 transform hover:scale-[1.02] active:scale-[0.98] ${
+                    loading
+                      ? "bg-slate-400 cursor-not-allowed scale-100"
+                      : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl focus:ring-blue-500/50"
+                  } text-white relative overflow-hidden group`}
+                >
+                  {/* Button background animation */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span>Generating Amazing Chapters...</span>
+                      <div className="flex gap-1">
+                        <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-1 h-1 bg-white/60 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        ></div>
+                        <div
+                          className="w-1 h-1 bg-white/60 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                      </div>
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-3 relative">
+                      <Zap className="w-6 h-6 group-hover:animate-pulse" />
+                      <span>Generate Chapters</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Enhanced History Section */}
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg rounded-2xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  Recent Learning Sessions
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">
+                  Continue from where you left off
+                </p>
+              </div>
+              <div className="p-6">
+                <Model1history
+                  setFromHistory={setFromHistory}
+                  setChapterHistory={setChapterHistory}
+                  loading={loading}
+                  setLoading={setLoading}
+                />
               </div>
             </div>
           </div>
+        )}
 
-          {/* error and button â€¦ */}
-          {formError && (
-            <div className="mt-4 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-red-700 dark:text-red-400 text-sm">
-                {formError}
-              </p>
-            </div>
-          )}
-          <button
-            onClick={generateChapters}
-            disabled={loading}
-            className={`mt-6 w-full font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                      ${
-                        loading
-                          ? "bg-slate-400 cursor-not-allowed"
-                          : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                      } text-white`}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Generating Chapters...</span>
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Generate Chapters
-              </span>
-            )}
-          </button>
-          <Model1history 
-          setFromHistory={setFromHistory}
-          setChapterHistory={setChapterHistory}
-          />
-        </section>
-      )}
-
-      {/* ---------------- TABÂ 2 : RESULTS ---------------- */}
-      {activeTab === "results" && (
-        <ResultsView
-          chapters={chapters}
-          videos={videos}
-          websites={websites}
-          loading={loading}
-          error={error}
-          setError={setError}
-          topic={topic}
-          fetchVideoResources={fetchVideoResources}
-          fetchWebResources={fetchWebResources}
-          grade={grade}
-          setVideos={setVideos}
-          setWebsites={setWebsites}
-          setLoading={setLoading}
-          fromHistory={fromHistory}
-          chapterHistory ={chapterHistory}
-          onBack={() => setActiveTab("form")}
-        />
-      )}
+        {/* Enhanced Results Tab */}
+        {activeTab === "results" && (
+          <div className="transition-all duration-500 ease-in-out">
+            <ResultsView
+              chapters={chapters}
+              videos={videos}
+              websites={websites}
+              error={error}
+              setError={setError}
+              topic={topic}
+              fetchVideoResources={fetchVideoResources}
+              fetchWebResources={fetchWebResources}
+              grade={grade}
+              setVideos={setVideos}
+              setWebsites={setWebsites}
+              fromHistory={fromHistory}
+              chapterHistory={chapterHistory}
+              onBack={() => setActiveTab("form")}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -4340,8 +4822,7 @@ export default Resources;
 ================================================
 FILE: frontend/src/components/ResultsView.jsx
 ================================================
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   BookOpen,
   ExternalLink,
@@ -4349,14 +4830,19 @@ import {
   AlertCircle,
   Loader2,
   ArrowLeft,
+  Sparkles,
+  Clock,
+  Target,
 } from "lucide-react";
-import {generateMultiVideoMCQs} from "../utils/contentScan"; // Import the function to generate quizzes
+import { generateMultiVideoMCQs } from "../utils/contentScan";
+import { useNavigate } from "react-router-dom";
+import { useQuiz } from "../contexts/QuizContext";
+import QuizLoading from "./QuizLoading";
 
 function ResultsView({
   chapters,
   videos,
   websites,
-  loading,
   error,
   topic,
   grade,
@@ -4364,7 +4850,6 @@ function ResultsView({
   setError,
   fetchVideoResources,
   fetchWebResources,
-  setLoading,
   setVideos,
   setWebsites,
   activeTab,
@@ -4372,208 +4857,331 @@ function ResultsView({
   chapterHistory,
   onBack,
 }) {
-  const handleChapterClick = async (e) => {
-    const chapter = e.target.textContent; // More reliable than innerHTML
-
+  const [loading, setLoading] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const navigate = useNavigate();
+  const { setQuestions, setUserAnswers, setCurrent, setShowResults } =
+    useQuiz();
+  const handleChapterClick = async (chapter) => {
     if (!chapter) return setError("Chapter cannot be blank");
 
+    // Reset previous resources and error
     setVideos([]);
     setWebsites([]);
     setError("");
 
-    if (fromHistory) {
-      // ✅ Find chapter object by matching name
-      const found = chapterHistory.find((item) => item.name === chapter);
+    // Get the index of the clicked chapter
+    const chapterIndex = chapters.findIndex(
+      (ch) => ch.toLowerCase().trim() === chapter.toLowerCase().trim()
+    );
 
-      if (found) {
-        setVideos(found.videos || []);
-        setWebsites(found.websites || []);
-      } else {
-        setError("Chapter not found in history.");
-      }
-
-      return; // ✅ Skip API calls
+    if (chapterIndex === -1) {
+      return setError("Chapter not found in list.");
     }
-    if (!topic?.trim()) return setError("Topic cannot be blank");
-    if (!grade?.trim()) return setError("Grade cannot be blank");
 
-    // 🔁 Live fetch from backend if not from history
-    try {
-      setLoading(true);
-      await fetchVideoResources(chapter);
-      const websitesArr = await fetchWebResources({ topic, grade, chapter });
-      setWebsites(websitesArr);
-    } catch (err) {
-      const backendMsg = err?.response?.data?.error;
-      setError(backendMsg || err.message || "Failed to fetch resources");
-      setVideos([]);
-      setWebsites([]);
-    } finally {
-      setLoading(false);
+    // Apply your logic here
+    if (fromHistory) {
+      const historyItem = chapterHistory[chapterIndex];
+
+      if (historyItem) {
+        setVideos(historyItem.videos || []);
+        setWebsites(historyItem.websites || []);
+      } else {
+        setError("No history found for this chapter.");
+      }
+    } else {
+      if (!topic?.trim()) return setError("Topic cannot be blank");
+      if (!grade?.trim()) return setError("Grade cannot be blank");
+
+      try {
+        setLoading(true);
+        await fetchVideoResources(chapter);
+        const websitesArr = await fetchWebResources({ topic, grade, chapter });
+        setWebsites(websitesArr);
+      } catch (err) {
+        const backendMsg = err?.response?.data?.error;
+        setError(backendMsg || err.message || "Failed to fetch resources");
+        setVideos([]);
+        setWebsites([]);
+      } finally {
+        setLoading(false);
+      }
     }
   };
-  const  handleGenerateQuiz = async() => {
-  console.log("Generating quiz for these videos:", videos);
-  const res = await generateMultiVideoMCQs(videos);
-  if (res.error) {
-    setError(res.error);
-  } else {
-    console.log("Quiz generated successfully:", res);
-  }
 
-};
+  const handleGenerateQuiz = async () => {
+    console.log("Generating quiz for these videos:", videos);
+    setQuizLoading(true); // start loading
 
+    try {
+      const res = await generateMultiVideoMCQs(videos);
+      if (res.error) {
+        setError(res.error);
+      } else {
+        console.log("Quiz generated successfully:", res);
+        setQuestions(res.questions);
+        setUserAnswers({});
+        setCurrent(0);
+        navigate("/quiz");
+      }
+    } catch (err) {
+      setError(err.message || "Failed to generate quiz");
+    } finally {
+      setQuizLoading(false); // stop loading
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-blue-600 hover:underline"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to input
-      </button>
-
-      {/* Error */}
-      {error && (
-        <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <p className="text-red-700 dark:text-red-400">{error}</p>
+    <div className="min-h-screen p-6 overflow-x-hidden">
+      {quizLoading && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+            <QuizLoading />
         </div>
       )}
 
-      {/* Generated Chapters */}
-      {chapters.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <BookOpen className="w-5 h-5 text-blue-600" />
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-              Generated Chapters
-            </h3>
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
-              {chapters.length}
-            </span>
-          </div>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white shadow-2xl border border-blue-400/20">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 text-blue-100 hover:text-white hover:bg-white/15 px-4 py-2 rounded-xl transition-all duration-200 mb-6 backdrop-blur-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to input
+          </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {chapters.map((chapter, i) => (
-              <div
-                key={i}
-                className="group bg-slate-50 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500 rounded-lg p-4 transition-all duration-200 cursor-pointer"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1">
-                    <h4
-                      onClick={handleChapterClick}
-                      className="text-slate-900 dark:text-slate-100 font-medium group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors"
-                    >
-                      {chapter}
-                    </h4>
-                  </div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
+              <Target className="w-8 h-8 text-blue-100" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                AI Learning Hub
+              </h1>
+              <p className="text-blue-100 text-lg font-medium">
+                Discover personalized educational resources powered by AI
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-gradient-to-r from-red-900/40 to-pink-900/40 border border-red-500/50 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-500/20 rounded-full p-2">
+                <AlertCircle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-red-300">Error Detected</h3>
+                <p className="text-red-200 font-medium">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generated Chapters */}
+        {chapters.length > 0 && (
+          <div className="bg-gradient-to-br from-gray-800 via-slate-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-700/50">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 border-b border-gray-700/30">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-3 shadow-lg">
+                  <BookOpen className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-3xl font-bold text-white">
+                    AI-Generated Chapters
+                  </h2>
+                  <p className="text-blue-100 font-medium">
+                    Click on any chapter to explore AI-curated resources
+                  </p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-lg text-white px-5 py-2 rounded-full font-bold border border-white/30">
+                  {chapters.length} chapters
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center p-8">
-          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Loading resources...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Resources Grid */}
-      {(videos.length > 0 || websites.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Videos */}
-          {videos.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Play className="w-5 h-5 text-red-500" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  Videos
-                </h3>
-                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
-                  {videos.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {videos.map((v, i) => (
-                  <a
+            <div className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {chapters.map((chapter, i) => (
+                  <div
                     key={i}
-                    href={v.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition-all duration-200 border border-slate-200 dark:border-slate-600 hover:border-red-300 dark:hover:border-red-500"
+                    onClick={() => handleChapterClick(chapter)}
+                    className="group relative bg-gradient-to-br from-gray-700 to-slate-800 hover:from-gray-600 hover:to-slate-700 rounded-2xl p-6 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:shadow-xl border border-gray-600/50 hover:border-indigo-500/50"
                   >
-                    <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Play className="w-4 h-4 text-white" />
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-gray-100 font-bold group-hover:text-indigo-300 transition-colors leading-relaxed overflow-hidden text-ellipsis break-words">
+                          {chapter}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-3 text-gray-400">
+                          <Clock className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm font-medium">
+                            Click to explore
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-slate-900 dark:text-slate-100 font-medium truncate">
-                        {v.title}
-                      </p>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  </a>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/10 group-hover:to-indigo-500/20 rounded-2xl transition-all duration-300" />
+                  </div>
                 ))}
               </div>
             </div>
-          )}
-          <div className="col-span-full flex justify-center mt-4">
-            <button
-              onClick={handleGenerateQuiz}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 rounded-lg transition duration-200"
-            >
-              Generate Quiz
-            </button>
           </div>
+        )}
 
-          {/* Websites */}
-          {websites.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <ExternalLink className="w-5 h-5 text-green-500" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  Websites
-                </h3>
-                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
-                  {websites.length}
-                </span>
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-gradient-to-br from-gray-800 to-slate-900 rounded-3xl shadow-2xl border border-gray-700/50 p-12">
+            <div className="flex flex-col items-center justify-center space-y-6">
+              <div className="relative">
+                <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 rounded-full p-6 shadow-lg">
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 rounded-full animate-pulse opacity-30" />
               </div>
-              <div className="space-y-3">
-                {websites.map((w, i) => (
-                  <a
-                    key={i}
-                    href={w.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 hover:bg-green-50 dark:hover:bg-slate-600 rounded-lg transition-all duration-200 border border-slate-200 dark:border-slate-600 hover:border-green-300 dark:hover:border-green-500"
-                  >
-                    <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <ExternalLink className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-slate-900 dark:text-slate-100 font-medium truncate">
-                        {w.title}
-                      </p>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  </a>
-                ))}
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-100 mb-2">
+                  AI is Processing Resources
+                </h3>
+                <p className="text-gray-400 font-medium">
+                  Our AI is curating the best personalized learning materials
+                  for you...
+                </p>
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* Resources Grid */}
+        {(videos.length > 0 || websites.length > 0) && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Videos Section */}
+              {videos.length > 0 && (
+                <div className="bg-gradient-to-br from-gray-800 to-red-900/20 rounded-3xl shadow-2xl border border-gray-700/50 overflow-hidden">
+                  <div className="bg-gradient-to-r from-red-600 to-pink-700 p-6 border-b border-gray-700/30">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-3 shadow-lg">
+                        <Play className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-2xl font-bold text-white">
+                          AI-Curated Videos
+                        </h3>
+                        <p className="text-red-100 font-medium">
+                          Personalized video content for visual learning
+                        </p>
+                      </div>
+                      <div className="bg-white/20 backdrop-blur-lg text-white px-5 py-2 rounded-full font-bold border border-white/30">
+                        {videos.length} videos
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    {videos.map((v, i) => (
+                      <a
+                        key={i}
+                        href={v.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-4 p-5 bg-gradient-to-r from-gray-700 to-red-900/20 hover:from-red-900/20 hover:to-pink-900/20 rounded-2xl border border-gray-600/50 hover:border-pink-500/50 transition-all duration-300 transform hover:scale-102 hover:shadow-lg"
+                      >
+                        <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                          <Play className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-gray-100 font-bold group-hover:text-red-300 transition-colors overflow-hidden text-ellipsis break-words">
+                            {v.title}
+                          </h4>
+                          <p className="text-gray-400 text-sm mt-1 font-medium">
+                            Click to watch AI-recommended video
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 bg-gray-600 rounded-full p-2 shadow-sm group-hover:shadow-md transition-shadow border border-gray-500/50">
+                          <ExternalLink className="w-5 h-5 text-gray-300 group-hover:text-red-400 transition-colors" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Websites Section */}
+              {websites.length > 0 && (
+                <div className="bg-gradient-to-br from-gray-800 to-emerald-900/20 rounded-3xl shadow-2xl border border-gray-700/50 overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 border-b border-gray-700/30">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-3 shadow-lg">
+                        <ExternalLink className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-2xl font-bold text-white">
+                          AI-Selected Resources
+                        </h3>
+                        <p className="text-emerald-100 font-medium">
+                          Intelligent reading materials and references
+                        </p>
+                      </div>
+                      <div className="bg-white/20 backdrop-blur-lg text-white px-5 py-2 rounded-full font-bold border border-white/30">
+                        {websites.length} sites
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    {websites.map((w, i) => (
+                      <a
+                        key={i}
+                        href={w.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-4 p-5 bg-gradient-to-r from-gray-700 to-emerald-900/20 hover:from-emerald-900/20 hover:to-teal-900/20 rounded-2xl border border-gray-600/50 hover:border-teal-500/50 transition-all duration-300 transform hover:scale-102 hover:shadow-lg"
+                      >
+                        <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                          <ExternalLink className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-gray-100 font-bold group-hover:text-emerald-300 transition-colors overflow-hidden text-ellipsis break-words">
+                            {w.title}
+                          </h4>
+                          <p className="text-gray-400 text-sm mt-1 font-medium">
+                            Click to visit AI-recommended website
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 bg-gray-600 rounded-full p-2 shadow-sm group-hover:shadow-md transition-shadow border border-gray-500/50">
+                          <ExternalLink className="w-5 h-5 text-gray-300 group-hover:text-emerald-400 transition-colors" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Generate Quiz Button */}
+            {videos.length > 0 && (
+              <div className="flex justify-center">
+                <button
+                  onClick={handleGenerateQuiz}
+                  className="group relative bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold px-10 py-5 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 border border-purple-300/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="w-6 h-6" />
+                    <span className="text-lg">Generate AI Quiz</span>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -4925,99 +5533,100 @@ export default Scanner;
 
 
 ================================================
-FILE: frontend/src/contexts/AuthContext.jsx
+FILE: frontend/src/contexts/QuizContext.jsx
 ================================================
-// src/contexts/AuthContext.jsx
-import React, { createContext, useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import axios from "axios";
+import React, { createContext, useState, useContext } from "react";
 
-export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [firebaseUid, setFirebaseUid] = useState(null);
-  const [firebaseIdToken, setFirebaseIdToken] = useState(null);
-  const [csrfToken, setCsrfToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+const QuizContext = createContext();
 
-  const API_BASE = import.meta.env.VITE_API_BASE;
-  const auth = getAuth();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
-      if (user) {
-        try {
-          const idToken = await user.getIdToken();
-          setFirebaseUid(user.uid);
-          setFirebaseIdToken(idToken);
-
-          // Fetch CSRF only once after login
-          const res = await axios.get(`${API_BASE}/get-csrf/`, {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-            withCredentials: true, // include cookies
-          });
-
-          if (res.data.csrfToken) {
-            setCsrfToken(res.data.csrfToken);
-          } else {
-            console.warn("No CSRF token in response");
-          }
-        } catch (err) {
-          console.error("Error during login token or CSRF fetch:", err);
-        }
-      } else {
-        // Clear everything if user logs out
-        setFirebaseUid(null);
-        setFirebaseIdToken(null);
-        setCsrfToken(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+export const QuizProvider = ({ children }) => {
+  const [questions, setQuestions] = useState([]); // Add setQuestions
+  const [userAnswers, setUserAnswers] = useState({});
+  const [current, setCurrent] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   return (
-    <AuthContext.Provider
-      value={{ firebaseUid, firebaseIdToken, csrfToken, loading }}
+    <QuizContext.Provider
+      value={{
+        questions,
+        setQuestions, // Expose this to context
+        userAnswers,
+        setUserAnswers,
+        current,
+        setCurrent,
+        showResults,
+        setShowResults,
+      }}
     >
       {children}
-    </AuthContext.Provider>
+    </QuizContext.Provider>
   );
 };
+
+export const useQuiz = () => useContext(QuizContext);
 
 
 
 ================================================
 FILE: frontend/src/pages/AuthForm.jsx
 ================================================
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   fetchSignInMethodsForEmail,
-} from 'firebase/auth';
-import { auth } from '../utils/firebase';
-import axios from 'axios';
-import { User, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+} from "firebase/auth";
+import { auth } from "../utils/firebase";
+import axios from "axios";
+import {
+  User,
+  Mail,
+  Lock,
+  LogIn,
+  UserPlus,
+  Brain,
+  Sparkles,
+  ArrowRight,
+  Target,
+  Users,
+  BookOpen,
+  Video,
+  Globe,
+  TestTube,
+  Shield,
+  TrendingUp,
+  CheckCircle,
+  Star,
+  Heart,
+  Coffee,
+} from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
+    username: "",
+    email: "",
+    password: "",
   });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setIsLoaded(true);
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Auth Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleLogin = async (e) => {
@@ -5026,12 +5635,12 @@ const AuthForm = () => {
       const { user } = await signInWithEmailAndPassword(
         auth,
         formData.email,
-        formData.password,
+        formData.password
       );
       const token = await user.getIdToken();
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
 
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
       console.error(error);
       alert(`Login failed: ${error.message}`);
@@ -5044,9 +5653,8 @@ const AuthForm = () => {
       const { user } = await createUserWithEmailAndPassword(
         auth,
         formData.email,
-        formData.password,
+        formData.password
       );
-
 
       // Register user in Django backend with UID in headers
       await axios.post(
@@ -5057,9 +5665,9 @@ const AuthForm = () => {
         },
         {
           headers: {
-            'X-Firebase-Uid': user.uid,
+            "X-Firebase-Uid": user.uid,
           },
-        },
+        }
       );
 
       setIsLogin(true);
@@ -5074,11 +5682,9 @@ const AuthForm = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const { user } = result;
-  
 
       const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
-      if (signInMethods.length != 1 && signInMethods[0] != 'google.com') {
-        
+      if (signInMethods.length != 1 && signInMethods[0] != "google.com") {
         await axios.post(
           `${API_BASE}/login/`,
           {
@@ -5087,127 +5693,344 @@ const AuthForm = () => {
           },
           {
             headers: {
-              'X-Firebase-UID': user.uid,
+              "X-Firebase-UID": user.uid,
             },
-          },
+          }
         );
       }
       setIsLogin(true);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
       console.error(error);
       alert(`Google login failed: ${error.message}`);
     }
   };
 
+  const features = [
+    {
+      icon: <Brain className="w-6 h-6" />,
+      text: "AI-Powered Learning",
+      color: "text-blue-400",
+    },
+    {
+      icon: <Video className="w-6 h-6" />,
+      text: "Smart Video Curation",
+      color: "text-purple-400",
+    },
+    {
+      icon: <Globe className="w-6 h-6" />,
+      text: "Trusted Resources",
+      color: "text-emerald-400",
+    },
+    {
+      icon: <TestTube className="w-6 h-6" />,
+      text: "Adaptive Quizzes",
+      color: "text-indigo-400",
+    },
+    {
+      icon: <Shield className="w-6 h-6" />,
+      text: "Privacy Protected",
+      color: "text-teal-400",
+    },
+    {
+      icon: <TrendingUp className="w-6 h-6" />,
+      text: "Progress Tracking",
+      color: "text-pink-400",
+    },
+  ];
+
+  const stats = [
+    {
+      number: "50K+",
+      label: "Active Learners",
+      icon: <Users className="w-5 h-5" />,
+    },
+    {
+      number: "1M+",
+      label: "Chapters Generated",
+      icon: <BookOpen className="w-5 h-5" />,
+    },
+    {
+      number: "99.8%",
+      label: "Success Rate",
+      icon: <Star className="w-5 h-5" />,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <div className="flex items-center justify-center space-x-2">
-              {isLogin ? (
-                <LogIn className="h-8 w-8 text-white" />
-              ) : (
-                <UserPlus className="h-8 w-8 text-white" />
-              )}
-              <h2 className="text-2xl font-bold text-white">
-                {isLogin ? 'Welcome Back' : 'Create Account'}
-              </h2>
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div
+          className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
+          style={{
+            left: mousePosition.x - 192,
+            top: mousePosition.y - 192,
+            transition: "all 0.3s ease-out",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-indigo-700/5 animate-pulse"></div>
+      </div>
+
+      <div className="relative h-screen flex items-center justify-center p-4 overflow-hidden">
+
+  <div className={`w-full max-w-[800px] h-[800px] overflow-hidden transition-all duration-1000 rounded-3xl ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+
+
+          {/* Main Container - Horizontal Layout */}
+          <div className="bg-gradient-to-br from-gray-800/90 to-slate-900/90 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-sm border border-gray-700/50">
+            <div className="grid lg:grid-cols-2 min-h-[600px]">
+
+
+              {/* Left Side - Branding & Features */}
+              <div className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-700/20 p-4 lg:p-6 flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-700/10 animate-pulse"></div>
+
+                <div className="relative z-10">
+                  {/* Logo & Brand */}
+                  <div className="flex items-center mb-8">
+                    <div className="relative">
+                      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 shadow-2xl border border-blue-400/30 animate-pulse">
+                        <Target className="w-12 h-12 text-white" />
+                      </div>
+                      <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 rounded-2xl blur opacity-30 animate-pulse"></div>
+                    </div>
+                    <div className="ml-4">
+                      <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-indigo-200 bg-clip-text text-transparent">
+                        AI Learning Hub
+                      </h1>
+                      <p className="text-blue-200 text-lg">
+                        Learn Smarter, Not Harder
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Welcome Message */}
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-bold text-white mb-4">
+                      {isLogin
+                        ? "ðŸŽ“ Welcome Back!"
+                        : "ðŸš€ Join the Future of Learning"}
+                    </h2>
+                    <p className="text-gray-300 text-lg leading-relaxed">
+                      {isLogin
+                        ? "Continue your personalized learning journey with AI-powered education tools."
+                        : "Transform your education with AI-generated content, smart quizzes, and curated resources."}
+                    </p>
+                  </div>
+
+                  {/* Features Grid */}
+                  <div className="grid grid-cols-2 gap-4 mb-8">
+                    {features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center p-3 bg-gradient-to-r from-gray-700/60 to-slate-800/60 rounded-xl border border-gray-600/50 hover:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm group"
+                      >
+                        <div
+                          className={`${feature.color} mr-3 bg-gray-800/50 rounded-lg p-2 group-hover:animate-pulse`}
+                        >
+                          {feature.icon}
+                        </div>
+                        <span className="text-gray-100 font-medium text-sm">
+                          {feature.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-4">
+                    {stats.map((stat, index) => (
+                      <div
+                        key={index}
+                        className="text-center p-4 bg-gradient-to-br from-gray-700/60 to-slate-800/60 rounded-xl border border-gray-600/50 backdrop-blur-sm"
+                      >
+                        <div className="flex justify-center mb-2 text-blue-400">
+                          {stat.icon}
+                        </div>
+                        <div className="text-2xl font-bold text-white">
+                          {stat.number}
+                        </div>
+                        <div className="text-gray-300 text-xs">
+                          {stat.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Auth Form */}
+              <div className="p-4 lg:p-6 flex flex-col justify-center">
+                <div className="max-w-md mx-auto w-full">
+                  {/* Form Header */}
+                  <div className="text-center mb-8">
+                    <div className="flex items-center justify-center mb-4">
+                      <div
+                        className={`bg-gradient-to-r ${
+                          isLogin
+                            ? "from-blue-600 to-indigo-600"
+                            : "from-purple-600 to-pink-600"
+                        } rounded-2xl p-3 shadow-lg animate-pulse`}
+                      >
+                        {isLogin ? (
+                          <LogIn className="h-8 w-8 text-white" />
+                        ) : (
+                          <UserPlus className="h-8 w-8 text-white" />
+                        )}
+                      </div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-white mb-2">
+                      {isLogin ? "Sign In" : "Create Account"}
+                    </h2>
+                    <p className="text-gray-400">
+                      {isLogin
+                        ? "Access your personalized learning dashboard"
+                        : "Start your AI-powered learning journey"}
+                    </p>
+                  </div>
+
+                  {/* Auth Form */}
+                  <form
+                    className="space-y-6"
+                    onSubmit={isLogin ? handleLogin : handleSignup}
+                  >
+                    {!isLogin && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                          <User className="h-4 w-4 text-blue-400" />
+                          <span>Username</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 text-white backdrop-blur-sm"
+                          placeholder="Choose a username"
+                          value={formData.username}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              username: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                        <Mail className="h-4 w-4 text-blue-400" />
+                        <span>Email</span>
+                      </label>
+                      <input
+                        type="email"
+                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 text-white backdrop-blur-sm"
+                        placeholder="Enter your email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                        <Lock className="h-4 w-4 text-blue-400" />
+                        <span>Password</span>
+                      </label>
+                      <input
+                        type="password"
+                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 text-white backdrop-blur-sm"
+                        placeholder="Enter your password"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      className="group w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-800 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 border border-blue-400/30"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <Sparkles className="w-5 h-5 group-hover:animate-spin" />
+                        {isLogin ? "Sign In" : "Create Account"}
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </button>
+
+                    {/* Divider */}
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-600/50"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-3 bg-gradient-to-br from-gray-800/90 to-slate-900/90 text-gray-400">
+                          or
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Google Login */}
+                    <button
+                      type="button"
+                      onClick={handleGoogleLogin}
+                      className="group w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-red-400/30"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                          <path
+                            fill="currentColor"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                          />
+                        </svg>
+                        Continue with Google
+                      </div>
+                    </button>
+
+                    {/* Toggle Button */}
+                    <button
+                      type="button"
+                      className="group w-full bg-transparent border-2 border-gray-600/50 hover:border-indigo-500/50 text-gray-300 hover:text-white py-4 px-6 rounded-xl font-medium text-lg hover:bg-gray-700/20 transition-all duration-300 transform hover:scale-105"
+                      onClick={() => setIsLogin(!isLogin)}
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <Heart className="w-5 h-5 group-hover:animate-pulse" />
+                        {isLogin
+                          ? "Need an account? Sign up"
+                          : "Already have an account? Sign in"}
+                      </div>
+                    </button>
+                  </form>
+
+                  {/* Footer */}
+                  <div className="text-center mt-8 pt-6 border-t border-gray-700/50">
+                    <div className="flex justify-center items-center gap-2 text-gray-400 text-sm">
+                      <Coffee className="w-4 h-4" />
+                      <span>Join our community of learners</span>
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-blue-100 text-center mt-2">
-              {isLogin ? 'Sign in to your account' : 'Join us today'}
-            </p>
           </div>
-
-          {/* Form */}
-          <form className="px-8 py-6 space-y-6" onSubmit={isLogin ? handleLogin : handleSignup}>
-            {!isLogin && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
-                  <User className="h-4 w-4" />
-                  <span>Username</span>
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all duration-200 placeholder-gray-400"
-                  placeholder="Choose a username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
-                />
-              </div>
-            )}
-
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <span>Email</span>
-              </label>
-              <input
-                type="email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all duration-200 placeholder-gray-400"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
-                <Lock className="h-4 w-4" />
-                <span>Password</span>
-              </label>
-              <input
-                type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all duration-200 placeholder-gray-400"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              {isLogin ? 'Sign In' : 'Create Account'}
-            </button>
-
-            {/* Google Login */}
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="w-full mt-2 border-2 border-red-500 text-red-600 py-3 px-4 rounded-lg font-medium hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all duration-200"
-            >
-              Continue with Google
-            </button>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
-              </div>
-            </div>
-
-            {/* Toggle Button */}
-            <button
-              type="button"
-              className="w-full border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-            </button>
-          </form>
         </div>
       </div>
     </div>
@@ -5358,7 +6181,7 @@ export default function Dashboard() {
        
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 bg-gradient-to-br from-slate-900 via-gray-900 to-black  overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto">
             {CurrentScreen ? (
               <CurrentScreen />
@@ -5394,32 +6217,409 @@ export default function Dashboard() {
 ================================================
 FILE: frontend/src/pages/Home.jsx
 ================================================
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Brain, Search, Rocket, Target, Users, BookOpen, Video, Globe, TestTube, Clock, BarChart, Star, ArrowRight, Play, CheckCircle, Sparkles, Upload, Link, Zap, Award, TrendingUp, Shield, Lightbulb, Coffee, Heart, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
 const Home = () => {
-  const navigate = useNavigate();
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isLoaded, setIsLoaded] = useState(false);
+   const navigate = useNavigate();
 
+  useEffect(() => {
+    setIsLoaded(true);
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const handleGetStarted = () => {
+    navigate("/auth")
+  };
+
+  const features = [
+    {
+      icon: <Brain className="w-8 h-8" />,
+      title: "AI Chapter Generator",
+      description: "Transform any topic into comprehensive, grade-appropriate chapters with visual aids and examples.",
+      gradient: "from-blue-500 via-purple-500 to-indigo-600",
+      detail: "Smart content generation that adapts to your learning level"
+    },
+    {
+      icon: <Video className="w-8 h-8" />,
+      title: "Smart Video Curation",
+      description: "AI-powered video selection with automatic summaries, timestamps, and follow-up questions.",
+      gradient: "from-red-500 to-pink-600",
+      detail: "Never waste time on irrelevant videos again"
+    },
+    {
+      icon: <Globe className="w-8 h-8" />,
+      title: "Trusted Resource Hub",
+      description: "Curated collection of verified educational websites and interactive learning materials.",
+      gradient: "from-emerald-500 to-teal-600",
+      detail: "Quality-checked resources from top educational institutions"
+    },
+    {
+      icon: <TestTube className="w-8 h-8" />,
+      title: "Dynamic Quiz Engine",
+      description: "Adaptive assessments that evolve with your learning progress and identify knowledge gaps.",
+      gradient: "from-purple-600 via-indigo-600 to-blue-600",
+      detail: "Personalized questions that challenge you at the right level"
+    }
+  ];
+
+  const newFeatures = [
+    {
+      icon: <Upload className="w-6 h-6" />,
+      title: "PDF Intelligence",
+      description: "Upload textbooks, notes, or papers - AI extracts key concepts and creates instant study materials.",
+      gradient: "from-orange-500 to-red-600"
+    },
+    {
+      icon: <Link className="w-6 h-6" />,
+      title: "YouTube AI Scanner",
+      description: "Paste any educational video link for instant summaries, notes, and comprehension questions.",
+      gradient: "from-pink-500 to-rose-600"
+    },
+    {
+      icon: <Zap className="w-6 h-6" />,
+      title: "Lightning Learning",
+      description: "Master complex topics in minutes with AI-optimized learning paths and micro-lessons.",
+      gradient: "from-yellow-500 to-orange-600"
+    }
+  ];
+
+  const benefits = [
+    { icon: <Target className="w-6 h-6" />, text: "Personalized Learning Journey", color: "text-blue-400" },
+    { icon: <Clock className="w-6 h-6" />, text: "24/7 AI Study Companion", color: "text-green-400" },
+    { icon: <BookOpen className="w-6 h-6" />, text: "Multi-Board Curriculum Support", color: "text-purple-400" },
+    { icon: <Brain className="w-6 h-6" />, text: "Intelligent Content Generation", color: "text-indigo-400" },
+    { icon: <TrendingUp className="w-6 h-6" />, text: "Advanced Progress Analytics", color: "text-pink-400" },
+    { icon: <Shield className="w-6 h-6" />, text: "Privacy-First Architecture", color: "text-teal-400" }
+  ];
+
+  const userTypes = [
+    { type: "Students", emoji: "🎓", gradient: "from-blue-500 to-indigo-600", desc: "K-12 & Higher Education" },
+    { type: "Teachers", emoji: "👨‍🏫", gradient: "from-emerald-500 to-teal-600", desc: "Lesson Planning & Resources" },
+    { type: "Exam Aspirants", emoji: "🏆", gradient: "from-purple-500 to-pink-600", desc: "JEE, NEET, UPSC & More" },
+    { type: "Lifelong Learners", emoji: "🌟", gradient: "from-orange-500 to-red-600", desc: "Continuous Skill Development" }
+  ];
+
+  const testimonials = [
+    {
+      name: "Ananya Sharma",
+      role: "NEET Aspirant",
+      text: "Uploaded my entire biology syllabus PDF - got perfect summaries and practice MCQs instantly!",
+      rating: 5,
+      image: "👩‍🎓"
+    },
+    {
+      name: "Aditya Kumar",
+      role: "Class 10 Student",
+      text: "The YouTube scanner is incredible. AI breaks down complex physics videos better than my tutor.",
+      rating: 5,
+      image: "👨‍🎓"
+    },
+    {
+      name: "Priya Patel",
+      role: "Teacher",
+      text: "Creating lesson plans is now effortless. My students love the interactive quizzes!",
+      rating: 5,
+      image: "👩‍🏫"
+    }
+  ];
+
+  const stats = [
+    { number: "50K+", label: "Active Learners", icon: <Users className="w-6 h-6" /> },
+    { number: "1M+", label: "Chapters Generated", icon: <BookOpen className="w-6 h-6" /> },
+    { number: "500K+", label: "Videos Analyzed", icon: <Video className="w-6 h-6" /> },
+    { number: "99.8%", label: "Success Rate", icon: <Award className="w-6 h-6" /> }
+  ];
+
+
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 to-blue-200 p-6">
-      <div className="max-w-2xl w-full bg-white shadow-xl rounded-2xl p-8 text-center">
-        <h1 className="text-4xl font-bold text-indigo-700 mb-4">Welcome to AI Tutor</h1>
-        <p className="text-gray-600 text-lg mb-8">
-          Empowering education with intelligent tools. Learn smarter, grow faster.
-        </p>
-        <button
-          onClick={() => navigate('/auth')}
-          className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl text-lg font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
-        >
-          Join Us
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div 
+          className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
+          style={{
+            left: mousePosition.x - 192,
+            top: mousePosition.y - 192,
+            transition: 'all 0.3s ease-out'
+          }}
+        />
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-indigo-700/20 animate-pulse"></div>
+        
+        <div className={`relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="text-center">
+            {/* Animated Logo */}
+            <div className="flex justify-center items-center mb-8">
+              <div className="relative">
+                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-6 shadow-2xl border border-blue-400/30 animate-bounce">
+                  <Target className="w-16 h-16 text-white" />
+                </div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 rounded-3xl blur opacity-30 animate-pulse"></div>
+              </div>
+            </div>
+            
+            {/* Main Title with Typing Effect */}
+            <h1 className="text-7xl font-bold bg-gradient-to-r from-white via-blue-100 to-indigo-200 bg-clip-text text-transparent mb-6 animate-pulse">
+              AI Learning Hub
+            </h1>
+            
+            <p className="text-3xl text-blue-100 mb-4 font-medium animate-bounce">
+              Learn Smarter, Not Harder
+            </p>
+            
+            <p className="text-xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed">
+              🔍 Instantly Understand Any Topic - Enter any topic and grade level – our AI generates 
+              easy-to-understand chapters, curated videos, helpful websites, and smart quizzes tailored just for you.
+            </p>
+
+
+            {/* Enhanced Get Started Button */}
+            <div className="flex justify-center mb-16">
+              <button
+                onClick={handleGetStarted}
+                className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-800 text-white font-bold px-16 py-8 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 border border-blue-300/30"
+              >
+                <div className="flex items-center gap-4">
+                  <Sparkles className="w-10 h-10 animate-spin" />
+                  <span className="text-3xl">Start Learning Now</span>
+                  <ArrowRight className="w-10 h-10 group-hover:translate-x-2 transition-transform" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 rounded-3xl blur opacity-0 group-hover:opacity-40 transition-opacity duration-300" />
+              </button>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+              {stats.map((stat, index) => (
+                <div key={index} className="bg-gradient-to-br from-gray-800/60 to-slate-900/60 rounded-2xl p-6 backdrop-blur-sm border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300">
+                  <div className="flex items-center justify-center mb-2 text-blue-400">
+                    {stat.icon}
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-1">{stat.number}</div>
+                  <div className="text-gray-300 text-sm">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Features Section */}
+      <div className="py-20 bg-gradient-to-br from-gray-800/50 to-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 shadow-lg animate-pulse">
+                <Rocket className="w-10 h-10 text-white" />
+              </div>
+            </div>
+            <h2 className="text-5xl font-bold text-white mb-6">🚀 Revolutionary Features</h2>
+            <p className="text-gray-300 text-xl max-w-3xl mx-auto">
+              Experience the future of personalized learning with our cutting-edge AI technology
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+            {features.map((feature, index) => (
+              <div 
+                key={index} 
+                className={`group bg-gradient-to-br from-gray-700/80 to-slate-800/80 rounded-3xl p-8 hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-gray-600/50 hover:border-indigo-500/50 cursor-pointer backdrop-blur-sm ${activeFeature === index ? 'ring-2 ring-blue-500' : ''}`}
+                onMouseEnter={() => setActiveFeature(index)}
+              >
+                <div className={`w-16 h-16 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:animate-pulse`}>
+                  <div className="text-white group-hover:scale-110 transition-transform">
+                    {feature.icon}
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-4 group-hover:text-indigo-300 transition-colors">{feature.title}</h3>
+                <p className="text-gray-300 leading-relaxed mb-4">{feature.description}</p>
+                <p className="text-sm text-indigo-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity">{feature.detail}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* New Features Highlight */}
+          <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 rounded-3xl p-8 border border-indigo-500/30 backdrop-blur-sm">
+            <h3 className="text-3xl font-bold text-white mb-8 text-center">🆕 Latest Innovations</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              {newFeatures.map((feature, index) => (
+                <div key={index} className="flex items-start p-6 bg-gradient-to-br from-gray-800/60 to-slate-900/60 rounded-2xl border border-gray-700/50 hover:border-indigo-500/50 transition-all duration-300">
+                  <div className={`p-3 bg-gradient-to-r ${feature.gradient} rounded-xl mr-4 flex-shrink-0`}>
+                    {feature.icon}
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-white mb-2">{feature.title}</h4>
+                    <p className="text-gray-300 text-sm">{feature.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Benefits Section */}
+      <div className="py-20 bg-gradient-to-br from-slate-800/50 to-gray-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">✨ Why Students Love Us</h2>
+            <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+              Discover powerful tools designed to enhance your learning experience
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="flex items-center p-6 bg-gradient-to-r from-gray-700/80 to-slate-800/80 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-600/50 hover:border-indigo-500/50 group backdrop-blur-sm">
+                <div className={`${benefit.color} mr-6 bg-gray-800 rounded-full p-3 group-hover:animate-pulse`}>
+                  {benefit.icon}
+                </div>
+                <span className="text-gray-100 font-medium text-lg group-hover:text-white transition-colors">{benefit.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Testimonials Section */}
+      <div className="py-20 bg-gradient-to-br from-gray-800/50 to-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">💬 What Our Users Say</h2>
+            <p className="text-gray-300 text-lg">Real stories from real students and teachers</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-gradient-to-br from-gray-700/80 to-slate-800/80 rounded-3xl p-8 border border-gray-600/50 hover:border-indigo-500/50 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm">
+                <div className="flex items-center mb-6">
+                  <div className="text-4xl mr-4">{testimonial.image}</div>
+                  <div>
+                    <div className="font-bold text-white">{testimonial.name}</div>
+                    <div className="text-gray-400 text-sm">{testimonial.role}</div>
+                  </div>
+                </div>
+                <p className="text-gray-300 mb-4 italic">"{testimonial.text}"</p>
+                <div className="flex text-yellow-400">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-current" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Perfect For Section */}
+      <div className="py-20 bg-gradient-to-br from-gray-800/50 to-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 shadow-lg animate-pulse">
+                <Users className="w-10 h-10 text-white" />
+              </div>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-4">🎯 Perfect for Everyone</h2>
+            <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+              Whether you're a student, teacher, or lifelong learner, AI Tutor adapts to your unique needs
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {userTypes.map((user, index) => (
+              <div key={index} className="group text-center p-8 bg-gradient-to-br from-gray-700/80 to-slate-800/80 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-600/50 hover:border-indigo-500/50 backdrop-blur-sm">
+                <div className={`w-20 h-20 bg-gradient-to-br ${user.gradient} rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:animate-bounce`}>
+                  <div className="text-4xl">{user.emoji}</div>
+                </div>
+                <h3 className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors mb-2">{user.type}</h3>
+                <p className="text-gray-400 text-sm">{user.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced CTA Section */}
+      <div className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 border-t border-blue-400/20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-indigo-700/20 animate-pulse"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-12 shadow-2xl border border-white/20">
+            <h2 className="text-5xl font-bold text-white mb-6">🚀 Start Your Learning Journey</h2>
+            <p className="text-xl text-blue-100 mb-10 max-w-3xl mx-auto">
+              Join 50,000+ students already transforming their education with AI. 
+              Experience personalized learning that adapts to your pace and style.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
+              <button 
+                onClick={handleGetStarted}
+                className="group w-full sm:w-auto bg-white text-indigo-600 px-12 py-6 rounded-2xl text-xl font-bold hover:bg-gray-100 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105"
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <Sparkles className="w-6 h-6 group-hover:animate-spin" />
+                  Start Free Trial
+                </div>
+              </button>
+              
+              <button className="group w-full sm:w-auto bg-transparent border-2 border-white text-white px-12 py-6 rounded-2xl text-xl font-bold hover:bg-white hover:text-indigo-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                <div className="flex items-center justify-center gap-3">
+                  <Heart className="w-6 h-6 group-hover:animate-pulse" />
+                  Join Community
+                </div>
+              </button>
+            </div>
+
+            <div className="text-center">
+              <div className="flex justify-center items-center gap-4 text-blue-100">
+                <Coffee className="w-5 h-5" />
+                <span>Join our community of passionate learners</span>
+                <MessageCircle className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Footer */}
+      <div className="py-12 bg-gray-900 text-center border-t border-gray-700/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-3 shadow-lg animate-pulse">
+              <Brain className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <p className="text-gray-400 text-xl font-semibold mb-2">
+            🎓 AI Tutor - Empowering education with intelligent tools
+          </p>
+          <p className="text-gray-500 mb-4">
+            Discover personalized educational resources powered by advanced AI technology
+          </p>
+          <div className="flex justify-center items-center gap-4 text-gray-400">
+            <Lightbulb className="w-5 h-5" />
+            <span>Built with ❤️ for learners worldwide</span>
+            <Sparkles className="w-5 h-5" />
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Home;
-
 
 
 ================================================
@@ -5437,6 +6637,321 @@ const NotFound = () => {
 
 export default NotFound;
 
+
+
+================================================
+FILE: frontend/src/pages/Quiz.jsx
+================================================
+import React, { useState } from "react";
+import { useQuiz } from "../contexts/QuizContext";
+import { useNavigate } from "react-router-dom";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  CheckCircle, 
+  XCircle, 
+  Trophy, 
+  Brain, 
+  PlayCircle,
+  Award,
+  Target,
+  Clock,
+  BookOpen,
+  ArrowLeft
+} from "lucide-react";
+
+const Quiz = () => {
+  const navigate = useNavigate();
+  const {  
+    questions,
+    setQuestions,
+    userAnswers,
+    setUserAnswers,
+    current,
+    setCurrent,
+    showResults,
+    setShowResults, 
+  } = useQuiz();
+
+  const currentQuestion = questions[current];
+  console.log(questions);
+  console.log("Current Question:", currentQuestion);
+
+  const handleAnswer = (optionKey) => {
+    setUserAnswers({ ...userAnswers, [current]: optionKey });
+  };
+
+  const handleNext = () => {
+    if (current < questions.length - 1) {
+      setCurrent(current + 1);
+    } else {
+      setShowResults(true);
+    }
+  };
+
+  const handlePrev = () => {
+    if (current > 0) {
+      setCurrent(current - 1);
+    }
+  };
+
+  const isCorrect = (index) => {
+    return userAnswers[index] === questions[index].correct_answer;
+  };
+
+  const calculateScore = () => {
+    const correctAnswers = questions.filter((_, index) => isCorrect(index)).length;
+    return {
+      correct: correctAnswers,
+      total: questions.length,
+      percentage: Math.round((correctAnswers / questions.length) * 100)
+    };
+  };
+
+  const getScoreColor = (percentage) => {
+    if (percentage >= 80) return "from-green-600 to-emerald-700";
+    if (percentage >= 60) return "from-yellow-600 to-orange-700";
+    return "from-red-600 to-pink-700";
+  };
+
+  const getScoreIcon = (percentage) => {
+    if (percentage >= 80) return Trophy;
+    if (percentage >= 60) return Award;
+    return Target;
+  };
+
+  const handleGoBack = () => {
+    // Reset quiz state
+    setShowResults(false);
+    setCurrent(0);
+    setUserAnswers({});
+    // Navigate back to previous page
+    navigate(-1);
+  };
+
+  return (
+    <div className="min-h-screen p-6 overflow-x-hidden bg-gradient-to-br from-gray-800 via-slate-800 to-gray-900">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white shadow-2xl border border-blue-400/20">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
+              <Brain className="w-8 h-8 text-blue-100" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                AI Quiz Challenge
+              </h1>
+              <p className="text-blue-100 text-lg font-medium">
+                Test your knowledge with AI-generated questions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {!showResults ? (
+          <div className="bg-gradient-to-br from-gray-800 via-slate-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-700/50">
+            {/* Progress Bar */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 border-b border-gray-700/30">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 backdrop-blur-lg rounded-xl p-2 shadow-lg">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">
+                      Question {current + 1} of {questions.length}
+                    </h2>
+                    <p className="text-blue-100 font-medium">
+                      Progress: {Math.round(((current + 1) / questions.length) * 100)}%
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-lg text-white px-4 py-2 rounded-full font-bold border border-white/30">
+                  {current + 1}/{questions.length}
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-white to-blue-100 h-full rounded-full transition-all duration-500 ease-out shadow-sm"
+                  style={{ width: `${((current + 1) / questions.length) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Question Content */}
+            <div className="p-8">
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-gray-100 mb-6 leading-relaxed">
+                  {currentQuestion.question}
+                </h3>
+                
+                <div className="space-y-4">
+                  {Object.entries(currentQuestion.options).map(([key, value]) => (
+                    <button
+                      key={key}
+                      onClick={() => handleAnswer(key)}
+                      className={`group w-full text-left p-5 rounded-2xl transition-all duration-300 transform hover:scale-102 border ${
+                        userAnswers[current] === key
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-700 border-blue-400 text-white shadow-lg"
+                          : "bg-gradient-to-r from-gray-700 to-slate-800 hover:from-gray-600 hover:to-slate-700 border-gray-600/50 hover:border-indigo-500/50 text-gray-100 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg ${
+                          userAnswers[current] === key
+                            ? "bg-white/20 backdrop-blur-lg text-white"
+                            : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
+                        }`}>
+                          {key.toUpperCase()}
+                        </div>
+                        <span className="font-medium text-lg">{value}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between">
+                <button
+                  onClick={handlePrev}
+                  disabled={current === 0}
+                  className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-gray-600 to-slate-700 hover:from-gray-500 hover:to-slate-600 text-white font-bold rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-gray-500/50"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  Previous
+                </button>
+                
+                <button
+                  onClick={handleNext}
+                  className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-105 border border-blue-400/30"
+                >
+                  {current < questions.length - 1 ? "Next" : "Submit Quiz"}
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Go Back Button */}
+            <div className="flex justify-start">
+              <button
+                onClick={handleGoBack}
+                className="inline-flex items-center gap-2 text-blue-100 hover:text-white hover:bg-white/15 px-6 py-3 rounded-xl transition-all duration-200 backdrop-blur-sm bg-gradient-to-r from-gray-700 to-slate-800 hover:from-gray-600 hover:to-slate-700 border border-gray-600/50 hover:border-indigo-500/50 font-medium shadow-lg"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Go Back to Resources
+              </button>
+            </div>
+
+            {/* Score Display */}
+            <div className={`bg-gradient-to-r ${getScoreColor(calculateScore().percentage)} rounded-3xl p-8 text-white shadow-2xl border border-white/20`}>
+              <div className="flex items-center gap-6">
+                <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
+                  {React.createElement(getScoreIcon(calculateScore().percentage), {
+                    className: "w-12 h-12 text-white"
+                  })}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-4xl font-bold mb-2">Quiz Complete!</h2>
+                  <p className="text-xl font-medium opacity-90">
+                    You scored {calculateScore().correct} out of {calculateScore().total} questions
+                  </p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 text-center shadow-lg">
+                  <div className="text-4xl font-bold">{calculateScore().percentage}%</div>
+                  <div className="text-lg font-medium opacity-90">Score</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Results Section */}
+            <div className="bg-gradient-to-br from-gray-800 via-slate-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-700/50">
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-700 p-6 border-b border-gray-700/30">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-3 shadow-lg">
+                    <CheckCircle className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Detailed Results</h3>
+                    <p className="text-purple-100 font-medium">
+                      Review your answers and learn from explanations
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                {questions.map((q, index) => (
+                  <div key={index} className="bg-gradient-to-r from-gray-700 to-slate-800 rounded-2xl p-6 border border-gray-600/50 shadow-lg">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg ${
+                        isCorrect(index) 
+                          ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white"
+                          : "bg-gradient-to-br from-red-500 to-pink-600 text-white"
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xl font-bold text-gray-100 mb-3">
+                          {q.question}
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            {isCorrect(index) ? (
+                              <CheckCircle className="w-5 h-5 text-green-400" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-400" />
+                            )}
+                            <span className={`font-bold ${
+                              isCorrect(index) ? "text-green-300" : "text-red-300"
+                            }`}>
+                              Your Answer: {userAnswers[index]?.toUpperCase() || "None"}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                            <span className="font-semibold text-green-300">
+                              Correct Answer: {q.correct_answer.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 p-4 bg-gray-800/50 rounded-xl border border-gray-600/30">
+                          <p className="text-gray-300 italic font-medium">{q.explanation}</p>
+                        </div>
+                        
+                        <div className="mt-4">
+                          <a
+                            href={q.youtube_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-pink-700 hover:from-red-700 hover:to-pink-800 text-white font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 border border-red-400/30"
+                          >
+                            <PlayCircle className="w-5 h-5" />
+                            <span>Watch at {q.timestamp}</span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Quiz;
 
 
 ================================================
@@ -5782,6 +7297,31 @@ export async function generateMultiVideoMCQs(videoUrls) {
 }
 
 
+export async function fetchPDFConversationHistory(pdfId) {
+  try {
+    const token = await getFirebaseIdToken();
+    const csrf = await getCsrfToken();
+    if (!token) throw new Error("User not authenticated");
+    const response = await axios.get(`${API_BASE}/user/pdfs/${pdfId}/conversations/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.data.status) {
+      return response.data.data; // returns array of conversation objects
+    } else {
+      throw new Error(response.data.error || "Unknown error");
+    }
+  } catch (err) {
+    console.error("Error fetching PDF conversation history:", err);
+    throw err;
+  }
+}
+
+
 ================================================
 FILE: frontend/src/utils/firebase.js
 ================================================
@@ -5854,144 +7394,144 @@ FILE: transcripts/multi_mcqs.json
 ================================================
 [
     {
-        "question": "What defines an \"agent\" in the context of autonomous systems, according to the video?",
+        "question": "What is a key distinguishing characteristic of Constraint Satisfaction Problems (CSPs) compared to other search techniques like uninformed or informed search?",
         "options": {
-            "a": "Something that can physically move.",
-            "b": "An entity that is programmed with all its behaviors ahead of time.",
-            "c": "An autonomous entity that observes its environment, chooses how to act based on observations, and whose actions change the environment's state.",
-            "d": "A system that only interacts with other agents."
+            "a": "CSPs primarily use tree or graph methods for problem exploration.",
+            "b": "CSPs rely heavily on heuristic functions for optimal solutions.",
+            "c": "The representation method in CSPs is totally different from state space representation.",
+            "d": "CSPs are exclusively used for problems with infinite variables and domains."
         },
         "correct_answer": "c",
-        "timestamp": "00:00:22,400",
-        "seconds": 22,
-        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=22s",
-        "explanation": "Explaination: The video states that an agent is \"something that is autonomous in the sense that it can observe the environment and then on its own choose how to act based on those observations,\" and importantly, \"its actions change the state of the environment.\" Physical movement is a possibility, but not a requirement, and agents can learn rather than being fully pre-programmed."
+        "timestamp": "00:59:565",
+        "seconds": 59,
+        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=59s",
+        "explanation": "Explanation: The video states that \"in constraint satisfaction, the way of representing is totally different\" compared to previous problems that used state space representation and explored problems using tree or graph methods."
     },
     {
-        "question": "Which of the following best describes the different types of multi-agent systems discussed in the video?",
+        "question": "According to the video, what are the three fundamental components used to represent any Constraint Satisfaction Problem (CSP)?",
         "options": {
-            "a": "Only cooperative agents working together for a common goal.",
-            "b": "Only adversarial agents competing against each other.",
-            "c": "Cooperative, adversarial, or a mix of both types of agents.",
-            "d": "Agents that only react to observations but do not affect the environment."
+            "a": "Variables, Solutions, and Rules",
+            "b": "Values, Decisions, and Conditions",
+            "c": "Vertices, Dimensions, and Choices",
+            "d": "Variables, Domains, and Constraints"
+        },
+        "correct_answer": "d",
+        "timestamp": "01:33:747",
+        "seconds": 93,
+        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=93s",
+        "explanation": "Explanation: The speaker explicitly states that each problem in CSP is represented with three components: V (set of variables), D (set of domains), and C (set of constraints)."
+    },
+    {
+        "question": "What is a key characteristic that distinguishes Constraint Satisfaction Problems (CSPs) from heuristic search techniques like informed search?",
+        "options": {
+            "a": "CSPs require the goal state to be specified beforehand.",
+            "b": "CSPs operate by explicitly discovering a predefined path to the goal.",
+            "c": "In CSPs, the goal state is not specified in advance and must be discovered based on specified constraints.",
+            "d": "CSPs are limited to problems where only numerical values are involved."
         },
         "correct_answer": "c",
-        "timestamp": "00:01:23,600",
-        "seconds": 83,
-        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=83s",
-        "explanation": "Explaination: The video explicitly states that multi-agent systems can consist of \"different types of cooperative agents\" trying to work together, be \"adversarial where the entities are trying to maximize their own personal benefit,\" or even be \"a mix of both adversarial and cooperative agents.\""
+        "timestamp": "00:01:17,930",
+        "seconds": 77,
+        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=77s",
+        "explanation": "Explanation: The video states that in heuristic search techniques, the goal state is already known, but in Constraint Satisfaction Problems, the goal state is not specified and must be discovered based on the given constraints."
     },
     {
-        "question": "According to the speaker, what was a key revelation from the DeepSeek R1 paper that generated significant excitement?",
+        "question": "According to the video, what are the three main components upon which Constraint Satisfaction Problems (CSPs) depend?",
         "options": {
-            "a": "RL's ability to train models with 100x more parameters than supervised learning.",
-            "b": "RL could effectively train smaller models with less compute for powerful reasoning.",
-            "c": "RL fine-tuning was entirely new to the field of LLMs.",
-            "d": "DeepSeek discovered a method to eliminate the need for pre-training in LLMs."
+            "a": "Nodes, Edges, and Paths",
+            "b": "Variables, Domains, and Constraints",
+            "c": "Scope, Relation, and Values",
+            "d": "Initial State, Intermediate States, and Goal State"
         },
         "correct_answer": "b",
-        "timestamp": "00:00:30,599",
-        "seconds": 30,
-        "youtube_url": "https://youtu.be/someVideoID?t=30s",
-        "explanation": "Explanation: The speaker states that DeepSeek was able to train a very powerful reasoning model by applying reinforcement learning and showed that a smaller model with less compute could work effectively with reinforcement learning, which got people very excited."
+        "timestamp": "00:03:50,709",
+        "seconds": 230,
+        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=230s",
+        "explanation": "Explanation: The video explicitly identifies the three main components of Constraint Satisfaction Problems as X (set of variables), D (set of domains), and C (set of constraints)."
     },
     {
-        "question": "What significant finding regarding RLHF (Reinforcement Learning from Human Feedback) was highlighted by the 2022 ChatGPT paper?",
+        "question": "What is the primary advantage of \"Intelligent Backtracking\" in Constraint Satisfaction Problems (CSPs) compared to simple backtracking?",
         "options": {
-            "a": "RLHF completely replaced the need for large pre-trained models.",
-            "b": "Models trained with supervised learning were consistently preferred over RLHF models.",
-            "c": "A smaller model trained with RLHF was consistently preferred by people over a much larger model trained with only supervised learning.",
-            "d": "RLHF was only effective for models with over 100 billion parameters."
+            "a": "It restarts the entire problem-solving process from the initial state upon encountering an error.",
+            "b": "It only allows backtracking when numerical errors occur, not logical ones.",
+            "c": "It intelligently backtracks to the specific step where the error likely originated, rather than the immediately preceding step or the beginning.",
+            "d": "It automatically solves the problem without requiring any backtracking."
         },
         "correct_answer": "c",
-        "timestamp": "00:01:30,360",
-        "seconds": 90,
-        "youtube_url": "https://youtu.be/someVideoID?t=90s",
-        "explanation": "Explanation: The transcript explicitly mentions that with RLHF, a model with only 1.5 billion parameters had outputs consistently preferred by people over a model 100 times the size that was trained with only supervised learning."
+        "timestamp": "00:07:39,949",
+        "seconds": 459,
+        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=459s",
+        "explanation": "Explanation: The video explains that intelligent backtracking allows the system to backtrack directly to the specific step where the mistake was made, rather than having to restart from the beginning or just the immediately previous step, which is characteristic of simple backtracking."
     },
     {
-        "question": "What was the main problem encountered with early approaches to RL fine-tuning of language models, as demonstrated by the music generation example?",
+        "question": "What is the primary objective of a Constraint Satisfaction Problem (CSP) in the context discussed?",
         "options": {
-            "a": "The models became too complex and difficult to train.",
-            "b": "RL agents would trivially optimize the reward function at the expense of forgetting the original data distribution.",
-            "c": "It was impossible to incorporate music theory rules into the RL objective.",
-            "d": "The training process required an infinite amount of reward data."
+            "a": "To find the optimal path in a graph.",
+            "b": "To allocate values to variables such that all specified conditions are met.",
+            "c": "To develop new programming languages.",
+            "d": "To forecast future data trends using historical information."
         },
         "correct_answer": "b",
-        "timestamp": "00:05:20,520",
-        "seconds": 320,
-        "youtube_url": "https://youtu.be/someVideoID?t=320s",
-        "explanation": "Explanation: The speaker illustrates this problem by showing that RL agents would \"trivially optimize the reward at the expense of kind of erasing everything it learned about the data distribution,\" leading to outputs like infinite C's in the music generation task."
+        "timestamp": "03:57:439",
+        "seconds": 237,
+        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=237s",
+        "explanation": "Explanation: The video defines CSPs as problems in computer science, especially AI, where the goal is to assign values to variables from their respective domains in a way that satisfies a given set of constraints or conditions."
     },
     {
-        "question": "What is the primary difference in the speaker's updated Pong environment compared to the first implementation described?",
+        "question": "According to the speaker, what are the three fundamental components that constitute a Constraint Satisfaction Problem (CSP)?",
         "options": {
-            "a": "The ball moves at a constant speed throughout the game.",
-            "b": "It features two agents playing Pong against each other instead of a single pad against a wall.",
-            "c": "The game includes a human player controlling one of the paddles.",
-            "d": "The ball's speed decreases after each deflection."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:00:17,279",
-        "seconds": 17,
-        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=17s",
-        "explanation": "Explanation: The speaker explicitly states that contrary to the first implementation which had just a single pad against a wall, the updated environment features two agents playing Pong against each other."
-    },
-    {
-        "question": "How does the ball's speed change during gameplay in the updated Pong environment?",
-        "options": {
-            "a": "It remains constant throughout the game.",
-            "b": "It decreases by 20% each time it hits a paddle.",
-            "c": "It increases by 20% each time an agent deflects it.",
-            "d": "It randomly increases or decreases at intervals."
+            "a": "Algorithms, data structures, and computational complexity.",
+            "b": "Input variables, output results, and processing time.",
+            "c": "Variables, a domain for each variable, and a set of constraints.",
+            "d": "Functions, procedures, and memory allocation."
         },
         "correct_answer": "c",
-        "timestamp": "00:00:39,440",
-        "seconds": 39,
-        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=39s",
-        "explanation": "Explanation: The speaker mentions that the ball starts with a normal speed, but each time one agent deflects the ball, its speed increases by 20 percent."
+        "timestamp": "04:05:560",
+        "seconds": 245,
+        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=245s",
+        "explanation": "Explanation: The speaker explicitly states that a CSP consists of variables, a domain for each variable (the range of possible values), and a set of constraints that define the allowable combinations of values."
     },
     {
-        "question": "What is the main contribution of the paper \"Social Influence as Intrinsic Motivation for Multi-Agent Deep Reinforcement Learning\"?",
+        "question": "What is considered the biggest application for Artificial Intelligence, as stated in the video?",
         "options": {
-            "a": "Proposing a new algorithm for single-agent reinforcement learning.",
-            "b": "Introducing social influence as an additional reward to encourage cooperation in multi-agent systems.",
-            "c": "Developing new benchmarks for multi-agent competitive games.",
-            "d": "Proving that centralized training is always superior to independent learning."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:01:08,560",
-        "seconds": 68,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=68s",
-        "explanation": "Explanation: The presenter explicitly states that the paper uses \"social influence as an additional reward to encourage agents to learn to cooperate not to be selfish,\" which encapsulates its core contribution."
-    },
-    {
-        "question": "According to the presentation, what is a key characteristic of a \"social dilemma\" in the context of multi-agent reinforcement learning?",
-        "options": {
-            "a": "All agents always achieve their individual maximum reward through selfish actions.",
-            "b": "Agents learn to ignore collective goals and only focus on individual survival.",
-            "c": "An individual must pay a personal cost to provide a resource that is shared by all, leading to potential suboptimal collective outcomes.",
-            "d": "The problem can only be solved with explicit communication channels between agents."
+            "a": "Data Analysis",
+            "b": "Machine Learning",
+            "c": "Problems Solving",
+            "d": "Natural Language Processing"
         },
         "correct_answer": "c",
-        "timestamp": "00:07:14,880",
-        "seconds": 434,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=434s",
-        "explanation": "Explanation: The presenter defines the social dilemma in the \"cleanup\" benchmark by saying, \"any individual must pay a personal cost in order to provide a resource that is shared by all.\" This highlights the conflict between individual gain and collective well-being."
+        "timestamp": "00:00:09,280",
+        "seconds": 9,
+        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=9s",
+        "explanation": "Explanation: The speaker explicitly states at the beginning of the video that \"Problem solving is the biggest application for Artificial Intelligence.\""
     },
     {
-        "question": "What type of problem formulation is primarily focused on in this paper for multi-agent reinforcement learning?",
+        "question": "According to the video, through which two main components does an AI agent interact with its environment?",
         "options": {
-            "a": "Fully Observable Markov Decision Processes (FOMDPs).",
-            "b": "Partially Observable Markov Games (POMGs).",
-            "c": "Decentralized Markov Chains.",
-            "d": "Centralized Control Systems."
+            "a": "Input and Output",
+            "b": "Perceptors and Actuators",
+            "c": "Senses and Effectors",
+            "d": "Sensors and Motors"
         },
-        "correct_answer": "b",
-        "timestamp": "00:01:58,640",
-        "seconds": 118,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=118s",
-        "explanation": "Explanation: The presenter clearly states, \"in this paper we we focus on the this partially observable marker for games.\""
+        "correct_answer": "c",
+        "timestamp": "00:00:33,879",
+        "seconds": 33,
+        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=33s",
+        "explanation": "Explanation: The video explains that an agent perceives its environment through \"senses\" and acts upon the environment using \"effectors.\""
+    },
+    {
+        "question": "What are the two main strategies mentioned in the video for solving problems in Artificial Intelligence?",
+        "options": {
+            "a": "State-space Search and Goal-based Search",
+            "b": "Optimal Search and Sub-optimal Search",
+            "c": "Uninformed Search and Informed Search",
+            "d": "Breadth-First Search and Depth-First Search"
+        },
+        "correct_answer": "c",
+        "timestamp": "00:08:07,849",
+        "seconds": 487,
+        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=487s",
+        "explanation": "Explanation: The speaker states, \"There are two strategies to solve problems: first is Uninformed Search... and second is Informed Search.\""
     }
 ]
 

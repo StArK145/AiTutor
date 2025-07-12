@@ -17,8 +17,11 @@ import requests
 # Disable yt-dlp logger to suppress ffmpeg warnings
 logging.getLogger('yt_dlp').setLevel(logging.ERROR)
 
+from googleapiclient.discovery import build
+
 class YouTubeProcessor:
     def __init__(self):
+        self.youtube = build('youtube', 'v3', developerKey=os.getenv("YOUTUBE_API_KEY"))
         self.groq_api_key = os.getenv("GROQ_API_KEY")
         self.groq_model = "deepseek-r1-distill-llama-70b"
         genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -91,11 +94,27 @@ class YouTubeProcessor:
         return f"https://www.youtube.com/watch?v={video_id}&t={int(timestamp)}s"
 
     def get_transcript(self, video_id: str) -> Union[List[Dict], None]:
-        """Get transcript with preference for English, then Hindi (including auto-generated), then None"""
-        # First try to get English transcript (manual or auto-generated)
+        """Get transcript using YouTube API with fallback to scraping"""
+        try:
+            # First try YouTube API
+            if hasattr(self, 'youtube'):  # Check if API client exists
+                captions = self.youtube.captions().list(
+                    part="snippet",
+                    videoId=video_id
+                ).execute()
+                
+                if captions.get('items'):
+                    transcript = self.youtube.captions().download(
+                        id=captions['items'][0]['id']
+                    ).execute()
+                    return self._format_api_transcript(transcript), 'en'
+        except Exception as api_error:
+            print(f"YouTube API failed: {str(api_error)}")
+        
+        # Fallback to scraping method (keep your existing code)
         try:
             transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            print("Found English transcript")
+            print("Found English transcript via scraping")
             return transcript, 'en'
         except Exception as e:
             print(f"Couldn't find English transcript: {str(e)}")
