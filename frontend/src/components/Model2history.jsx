@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { fetchUserPDFList } from "../utils/contentScan";
 import { History, FileText, Youtube, Clock, MessageSquare } from "lucide-react";
 import { deletePdf } from "../utils/contentScan"; // Import the delete function
-import { fetchYouTubeHistory, deleteYoutubeVideo } from "../utils/contentScan"; // Import YouTube functions
-
+import { fetchYouTubeHistory, deleteYoutubeVideo, fetchPDFConversationHistory } from "../utils/contentScan"; // Import YouTube functions
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -50,6 +49,7 @@ const Model2history = () => {
   const [pdfHistory, setPdfHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ytHistory, setYtHistory] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null); // Store selected PDF or YT video
 
   // Fetch PDF upload history
   useEffect(() => {
@@ -105,6 +105,17 @@ const Model2history = () => {
     } catch (err) {
       alert("Error: " + err.message);
     }
+  };
+
+ const handlePdfClick = (pdf) => {
+  alert("Viewing conversation history for PDFs is not available yet.");
+};
+
+
+
+  const handleYouTubeClick = (video) => {
+    alert("Viewing conversation history for YouTube is not available yet.");
+    // You can navigate, show a modal, etc.
   };
 
   return (
@@ -230,7 +241,8 @@ const Model2history = () => {
               {pdfHistory.map((pdf) => (
                 <div
                   key={pdf.id}
-                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                  onClick={() => handlePdfClick(pdf)}
+                  className="cursor-pointer p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -266,7 +278,10 @@ const Model2history = () => {
 
                       {/* Delete Button */}
                       <button
-                        onClick={() => handleDelete(pdf.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(pdf.id);
+                        }}
                         className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                       >
                         Delete
@@ -289,7 +304,8 @@ const Model2history = () => {
             {ytHistory.map((video) => (
               <div
                 key={video.id}
-                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                onClick={() => handleYouTubeClick(video)}
+                className="cursor-pointer p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -323,16 +339,11 @@ const Model2history = () => {
                   </div>
 
                   <div className="ml-4 flex flex-col items-end gap-2">
-                    <a
-                      href={`https://youtube.com/watch?v=${video.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      Watch
-                    </a>
                     <button
-                      onClick={() => handleDeleteYT(video.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteYT(video.id);
+                      }}
                       className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                     >
                       Delete

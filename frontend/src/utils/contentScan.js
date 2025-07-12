@@ -281,3 +281,28 @@ export async function generateMultiVideoMCQs(videoUrls) {
     throw error;
   }
 }
+
+
+export async function fetchPDFConversationHistory(pdfId) {
+  try {
+    const token = await getFirebaseIdToken();
+    const csrf = await getCsrfToken();
+    if (!token) throw new Error("User not authenticated");
+    const response = await axios.get(`${API_BASE}/user/pdfs/${pdfId}/conversations/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-CSRFToken": csrf,  // Optional if using CSRF protection
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.data.status) {
+      return response.data.data; // returns array of conversation objects
+    } else {
+      throw new Error(response.data.error || "Unknown error");
+    }
+  } catch (err) {
+    console.error("Error fetching PDF conversation history:", err);
+    throw err;
+  }
+}

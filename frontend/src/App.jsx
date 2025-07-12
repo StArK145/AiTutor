@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import AuthForm from './pages/AuthForm';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
+import Quiz from './pages/Quiz';
 
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard/*" element={<Dashboard/>} />
+        <Route path="/quiz" element={<Quiz />} />
 
         <Route path="/auth" element={<AuthForm />} />
         <Route path="*" element={<NotFound />} />
