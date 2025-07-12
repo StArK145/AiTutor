@@ -1,142 +1,142 @@
 [
     {
-        "question": "What is a key distinguishing characteristic of Constraint Satisfaction Problems (CSPs) compared to other search techniques like uninformed or informed search?",
+        "question": "What is the primary function of a synapse in the nervous system?",
         "options": {
-            "a": "CSPs primarily use tree or graph methods for problem exploration.",
-            "b": "CSPs rely heavily on heuristic functions for optimal solutions.",
-            "c": "The representation method in CSPs is totally different from state space representation.",
-            "d": "CSPs are exclusively used for problems with infinite variables and domains."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:59:565",
-        "seconds": 59,
-        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=59s",
-        "explanation": "Explanation: The video states that \"in constraint satisfaction, the way of representing is totally different\" compared to previous problems that used state space representation and explored problems using tree or graph methods."
-    },
-    {
-        "question": "According to the video, what are the three fundamental components used to represent any Constraint Satisfaction Problem (CSP)?",
-        "options": {
-            "a": "Variables, Solutions, and Rules",
-            "b": "Values, Decisions, and Conditions",
-            "c": "Vertices, Dimensions, and Choices",
-            "d": "Variables, Domains, and Constraints"
+            "a": "To prevent communication between neurons",
+            "b": "To produce new neurons for brain growth",
+            "c": "To regulate blood flow to the brain",
+            "d": "To allow two neurons to communicate and transmit signals"
         },
         "correct_answer": "d",
-        "timestamp": "01:33:747",
-        "seconds": 93,
-        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=93s",
-        "explanation": "Explanation: The speaker explicitly states that each problem in CSP is represented with three components: V (set of variables), D (set of domains), and C (set of constraints)."
+        "timestamp": "00:00:15,809",
+        "seconds": 15,
+        "youtube_url": "https://youtu.be/k5RafiYXieo?t=15s",
+        "explanation": "Explanation: The transcript explicitly states, \"A synapse is a region where two neurons come... able to communicate,\" and further clarifies that synapses are \"the way that neurons in the brain... accomplish tasks.\""
     },
     {
-        "question": "What is a key characteristic that distinguishes Constraint Satisfaction Problems (CSPs) from heuristic search techniques like informed search?",
+        "question": "In a chemical synapse, what is the role of synaptic vesicles?",
         "options": {
-            "a": "CSPs require the goal state to be specified beforehand.",
-            "b": "CSPs operate by explicitly discovering a predefined path to the goal.",
-            "c": "In CSPs, the goal state is not specified in advance and must be discovered based on specified constraints.",
-            "d": "CSPs are limited to problems where only numerical values are involved."
+            "a": "To produce electrical signals (action potentials)",
+            "b": "To act as receptors for neurotransmitters on the postsynaptic neuron",
+            "c": "To store and release neurotransmitters into the synaptic cleft",
+            "d": "To break down neurotransmitters after release"
         },
         "correct_answer": "c",
-        "timestamp": "00:01:17,930",
+        "timestamp": "00:03:21,880",
+        "seconds": 201,
+        "youtube_url": "https://youtu.be/k5RafiYXieo?t=201s",
+        "explanation": "Explanation: The transcript defines synaptic vesicles as \"tiny sac-like organelles that store neurotransmitter molecules\" and describes how they \"attach and fuse with the presynaptic membrane\" to \"release their neurotransmitters into the synaptic cleft.\""
+    },
+    {
+        "question": "What is the primary way neurons communicate with each other, as described in the video?",
+        "options": {
+            "a": "Through direct electrical currents",
+            "b": "Via chemical signals (neurotransmitters) released into the synaptic cleft",
+            "c": "By physically touching neighboring cells",
+            "d": "Via long-distance hormonal secretions"
+        },
+        "correct_answer": "b",
+        "timestamp": "00:00:03,280",
+        "seconds": 3,
+        "youtube_url": "https://youtu.be/cZwb8zqAPXc?t=3s",
+        "explanation": "Explaination: The transcript states that neurons communicate \"mainly via\" and then describes the release of a neurotransmitter into the synaptic cleft, transmitting information to a neighboring neuron. This indicates chemical communication."
+    },
+    {
+        "question": "In the context of synaptic transmission, what term is used to describe the neuron that releases the neurotransmitter?",
+        "options": {
+            "a": "The post-synaptic neuron",
+            "b": "The afferent neuron",
+            "c": "The pre-synaptic neuron",
+            "d": "The efferent neuron"
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:37,120",
+        "seconds": 37,
+        "youtube_url": "https://youtu.be/cZwb8zqAPXc?t=37s",
+        "explanation": "Explaination: The video explicitly defines \"the pre-synaptic neuron\" as the one releasing the neurotransmitter, while the post-synaptic neuron is the one that receives the information."
+    },
+    {
+        "question": "Which of the following is NOT mentioned as a major class of neurotransmitters in the video?",
+        "options": {
+            "a": "Amino acids",
+            "b": "Monoamines",
+            "c": "Steroids",
+            "d": "Peptides"
+        },
+        "correct_answer": "c",
+        "timestamp": "00:01:17,520",
         "seconds": 77,
-        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=77s",
-        "explanation": "Explanation: The video states that in heuristic search techniques, the goal state is already known, but in Constraint Satisfaction Problems, the goal state is not specified and must be discovered based on the given constraints."
+        "youtube_url": "https://youtu.be/cZwb8zqAPXc?t=77s",
+        "explanation": "Explaination: The video lists \"Major classes include: Amino acids such as glycine, glutamate, aspartate, and GABA; Peptides such as beta-endorphin and substance P; Monoamines such as dopamine, serotonin, and histamine; and Acetylcholine.\" Steroids are not listed as a major class."
     },
     {
-        "question": "According to the video, what are the three main components upon which Constraint Satisfaction Problems (CSPs) depend?",
+        "question": "What is the primary characteristic of a synapse regarding the connection between neurons?",
         "options": {
-            "a": "Nodes, Edges, and Paths",
-            "b": "Variables, Domains, and Constraints",
-            "c": "Scope, Relation, and Values",
-            "d": "Initial State, Intermediate States, and Goal State"
-        },
-        "correct_answer": "b",
-        "timestamp": "00:03:50,709",
-        "seconds": 230,
-        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=230s",
-        "explanation": "Explanation: The video explicitly identifies the three main components of Constraint Satisfaction Problems as X (set of variables), D (set of domains), and C (set of constraints)."
-    },
-    {
-        "question": "What is the primary advantage of \"Intelligent Backtracking\" in Constraint Satisfaction Problems (CSPs) compared to simple backtracking?",
-        "options": {
-            "a": "It restarts the entire problem-solving process from the initial state upon encountering an error.",
-            "b": "It only allows backtracking when numerical errors occur, not logical ones.",
-            "c": "It intelligently backtracks to the specific step where the error likely originated, rather than the immediately preceding step or the beginning.",
-            "d": "It automatically solves the problem without requiring any backtracking."
+            "a": "It is a direct anatomical fusion of two neurons.",
+            "b": "It ensures complete electrical isolation between neurons.",
+            "c": "It provides a physiological continuity for nerve impulse transmission.",
+            "d": "It functions solely as a physical bridge, without chemical involvement."
         },
         "correct_answer": "c",
-        "timestamp": "00:07:39,949",
-        "seconds": 459,
-        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=459s",
-        "explanation": "Explanation: The video explains that intelligent backtracking allows the system to backtrack directly to the specific step where the mistake was made, rather than having to restart from the beginning or just the immediately previous step, which is characteristic of simple backtracking."
+        "timestamp": "00:04:45,840",
+        "seconds": 285,
+        "youtube_url": "https://youtu.be/3I_Av_YPQsU_PLACEHOLDER?t=285s",
+        "explanation": "Explanation: The speaker explicitly states that a synapse is a connection between neurons for nerve impulse transmission, and it is not an anatomical connection but rather a physiological continuity between nerves."
     },
     {
-        "question": "What is the primary objective of a Constraint Satisfaction Problem (CSP) in the context discussed?",
+        "question": "According to the video, which type of synapse is predominantly found in the human body?",
         "options": {
-            "a": "To find the optimal path in a graph.",
-            "b": "To allocate values to variables such that all specified conditions are met.",
-            "c": "To develop new programming languages.",
-            "d": "To forecast future data trends using historical information."
-        },
-        "correct_answer": "b",
-        "timestamp": "03:57:439",
-        "seconds": 237,
-        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=237s",
-        "explanation": "Explanation: The video defines CSPs as problems in computer science, especially AI, where the goal is to assign values to variables from their respective domains in a way that satisfies a given set of constraints or conditions."
-    },
-    {
-        "question": "According to the speaker, what are the three fundamental components that constitute a Constraint Satisfaction Problem (CSP)?",
-        "options": {
-            "a": "Algorithms, data structures, and computational complexity.",
-            "b": "Input variables, output results, and processing time.",
-            "c": "Variables, a domain for each variable, and a set of constraints.",
-            "d": "Functions, procedures, and memory allocation."
+            "a": "Electrical synapse",
+            "b": "Axo-axonic synapse",
+            "c": "Chemical synapse",
+            "d": "Axo-dendritic synapse"
         },
         "correct_answer": "c",
-        "timestamp": "04:05:560",
-        "seconds": 245,
-        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=245s",
-        "explanation": "Explanation: The speaker explicitly states that a CSP consists of variables, a domain for each variable (the range of possible values), and a set of constraints that define the allowable combinations of values."
+        "timestamp": "00:04:16,040",
+        "seconds": 256,
+        "youtube_url": "https://youtu.be/3I_Av_YPQsU_PLACEHOLDER?t=256s",
+        "explanation": "Explanation: The speaker clearly mentions that electrical synapses are not found in the human body, and we primarily study chemical synapses."
     },
     {
-        "question": "What is considered the biggest application for Artificial Intelligence, as stated in the video?",
+        "question": "What causes voltage-gated calcium channels to open at the synaptic terminal of a neuron?",
         "options": {
-            "a": "Data Analysis",
-            "b": "Machine Learning",
-            "c": "Problems Solving",
-            "d": "Natural Language Processing"
+            "a": "The neuron reaching its resting potential of -70 mV",
+            "b": "An influx of chloride ions making the neuron more negative",
+            "c": "The depolarization of the synaptic terminal due to the action potential (sodium influx)",
+            "d": "The release of neurotransmitters into the synaptic cleft"
         },
         "correct_answer": "c",
-        "timestamp": "00:00:09,280",
-        "seconds": 9,
-        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=9s",
-        "explanation": "Explanation: The speaker explicitly states at the beginning of the video that \"Problem solving is the biggest application for Artificial Intelligence.\""
+        "timestamp": "00:01:36,270",
+        "seconds": 96,
+        "youtube_url": "https://youtu.be/fhiJo1QYGtA?t=96s",
+        "explanation": "Explanation: The transcript states that when the end of the neuron becomes very positive due to the action potential (sodium influx), it stimulates the voltage-gated calcium channels to open."
     },
     {
-        "question": "According to the video, through which two main components does an AI agent interact with its environment?",
+        "question": "What is the primary role of calcium ions once they enter the synaptic terminal?",
         "options": {
-            "a": "Input and Output",
-            "b": "Perceptors and Actuators",
-            "c": "Senses and Effectors",
-            "d": "Sensors and Motors"
+            "a": "To directly open sodium channels on the postsynaptic neuron",
+            "b": "To make the inside of the presynaptic neuron more negative",
+            "c": "To stimulate vesicles containing neurotransmitters to move and fuse with the presynaptic membrane",
+            "d": "To generate a new action potential within the presynaptic neuron"
         },
         "correct_answer": "c",
-        "timestamp": "00:00:33,879",
-        "seconds": 33,
-        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=33s",
-        "explanation": "Explanation: The video explains that an agent perceives its environment through \"senses\" and acts upon the environment using \"effectors.\""
+        "timestamp": "00:01:53,700",
+        "seconds": 113,
+        "youtube_url": "https://youtu.be/fhiJo1QYGtA?t=113s",
+        "explanation": "Explanation: The speaker explains that when calcium enters the synaptic terminals, it stimulates the vesicles (which contain neurotransmitters) to start moving towards the membrane, fuse with it, and release their contents."
     },
     {
-        "question": "What are the two main strategies mentioned in the video for solving problems in Artificial Intelligence?",
+        "question": "According to the video, what is the general sequence of signal transmission across a synapse?",
         "options": {
-            "a": "State-space Search and Goal-based Search",
-            "b": "Optimal Search and Sub-optimal Search",
-            "c": "Uninformed Search and Informed Search",
-            "d": "Breadth-First Search and Depth-First Search"
+            "a": "Chemical signal -> Electrical signal -> Chemical signal",
+            "b": "Electrical signal -> Electrical signal -> Chemical signal",
+            "c": "Electrical signal -> Chemical signal -> Electrical signal",
+            "d": "Chemical signal -> Electrical signal -> Electrical signal"
         },
         "correct_answer": "c",
-        "timestamp": "00:08:07,849",
-        "seconds": 487,
-        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=487s",
-        "explanation": "Explanation: The speaker states, \"There are two strategies to solve problems: first is Uninformed Search... and second is Informed Search.\""
+        "timestamp": "00:03:08,890",
+        "seconds": 188,
+        "youtube_url": "https://youtu.be/fhiJo1QYGtA?t=188s",
+        "explanation": "Explanation: The speaker explicitly summarizes the process by saying, \"what you get is an electrical signal then a chemical signal then an electrical signal again.\""
     }
 ]
