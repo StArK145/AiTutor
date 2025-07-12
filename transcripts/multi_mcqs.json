@@ -1,142 +1,142 @@
 [
     {
-        "question": "What is the primary function of a synapse in the nervous system?",
+        "question": "According to the speaker, what is one significant concern regarding artificial intelligence that keeps them up at night?",
         "options": {
-            "a": "To prevent communication between neurons",
-            "b": "To produce new neurons for brain growth",
-            "c": "To regulate blood flow to the brain",
-            "d": "To allow two neurons to communicate and transmit signals"
-        },
-        "correct_answer": "d",
-        "timestamp": "00:00:15,809",
-        "seconds": 15,
-        "youtube_url": "https://youtu.be/k5RafiYXieo?t=15s",
-        "explanation": "Explanation: The transcript explicitly states, \"A synapse is a region where two neurons come... able to communicate,\" and further clarifies that synapses are \"the way that neurons in the brain... accomplish tasks.\""
-    },
-    {
-        "question": "In a chemical synapse, what is the role of synaptic vesicles?",
-        "options": {
-            "a": "To produce electrical signals (action potentials)",
-            "b": "To act as receptors for neurotransmitters on the postsynaptic neuron",
-            "c": "To store and release neurotransmitters into the synaptic cleft",
-            "d": "To break down neurotransmitters after release"
+            "a": "The rapid pace of technological advancements in AI.",
+            "b": "The potential for AI to become self-aware and autonomous.",
+            "c": "People being unaware that AI is making decisions directly impacting their lives.",
+            "d": "The high cost of developing advanced AI systems."
         },
         "correct_answer": "c",
-        "timestamp": "00:03:21,880",
-        "seconds": 201,
-        "youtube_url": "https://youtu.be/k5RafiYXieo?t=201s",
-        "explanation": "Explanation: The transcript defines synaptic vesicles as \"tiny sac-like organelles that store neurotransmitter molecules\" and describes how they \"attach and fuse with the presynaptic membrane\" to \"release their neurotransmitters into the synaptic cleft.\""
+        "timestamp": "00:00:16,160",
+        "seconds": 16,
+        "youtube_url": "https://youtu.be/aGwYtUzMQUk?t=16s",
+        "explanation": "Explanation: The speaker explicitly states that a concern keeping them up at night is that \"people may have no idea that an artificial intelligence is making a decision that directly impacts their lives.\""
     },
     {
-        "question": "What is the primary way neurons communicate with each other, as described in the video?",
+        "question": "What is the primary reason given for why many AI proof of concepts fail within organizations?",
         "options": {
-            "a": "Through direct electrical currents",
-            "b": "Via chemical signals (neurotransmitters) released into the synaptic cleft",
-            "c": "By physically touching neighboring cells",
-            "d": "Via long-distance hormonal secretions"
+            "a": "Lack of sufficient computing power.",
+            "b": "Insufficient data for model training.",
+            "c": "People's distrust of the AI model's results.",
+            "d": "High employee turnover in AI teams."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:01:25,120",
+        "seconds": 85,
+        "youtube_url": "https://youtu.be/aGwYtUzMQUk?t=85s",
+        "explanation": "Explanation: The speaker directly states that AI proof of concepts often fail \"because people do not trust the results from that AI model.\""
+    },
+    {
+        "question": "**What is the primary definition of Artificial Intelligence (AI) as described in the transcript?**",
+        "options": {
+            "a": "A type of robot designed for physical labor.",
+            "b": "The simulation of human intelligence processes by machines.",
+            "c": "A new programming language for complex calculations.",
+            "d": "The study of human-computer interaction."
         },
         "correct_answer": "b",
-        "timestamp": "00:00:03,280",
-        "seconds": 3,
-        "youtube_url": "https://youtu.be/cZwb8zqAPXc?t=3s",
-        "explanation": "Explaination: The transcript states that neurons communicate \"mainly via\" and then describes the release of a neurotransmitter into the synaptic cleft, transmitting information to a neighboring neuron. This indicates chemical communication."
+        "timestamp": "00:00:02,720",
+        "seconds": 2,
+        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=2s",
+        "explanation": "Explanation: The transcript explicitly states, \"Artificial intelligence AI refers to the simulation of human intelligence processes by machines particularly computer systems.\""
     },
     {
-        "question": "In the context of synaptic transmission, what term is used to describe the neuron that releases the neurotransmitter?",
+        "question": "**According to the transcript, which of the following is a key characteristic of \"General AI\"?**",
         "options": {
-            "a": "The post-synaptic neuron",
-            "b": "The afferent neuron",
-            "c": "The pre-synaptic neuron",
-            "d": "The efferent neuron"
+            "a": "Designed to perform a narrow task like facial recognition.",
+            "b": "Capable of performing any intellectual task that a human can do.",
+            "c": "Primarily used for internet searches and data analysis.",
+            "d": "Limited to solving mathematical theorems and playing chess."
         },
-        "correct_answer": "c",
-        "timestamp": "00:00:37,120",
-        "seconds": 37,
-        "youtube_url": "https://youtu.be/cZwb8zqAPXc?t=37s",
-        "explanation": "Explaination: The video explicitly defines \"the pre-synaptic neuron\" as the one releasing the neurotransmitter, while the post-synaptic neuron is the one that receives the information."
+        "correct_answer": "b",
+        "timestamp": "00:00:27,160",
+        "seconds": 27,
+        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=27s",
+        "explanation": "Explanation: The video categorizes AI into \"narrow AI... designed to perform a narrow task\" and \"general AI which can perform any intellectual task that a human can do.\""
     },
     {
-        "question": "Which of the following is NOT mentioned as a major class of neurotransmitters in the video?",
+        "question": "**Who is credited with first coining the term \"Artificial Intelligence\" and at what significant event?**",
         "options": {
-            "a": "Amino acids",
-            "b": "Monoamines",
-            "c": "Steroids",
-            "d": "Peptides"
+            "a": "Alan Turing at the Bletchley Park Conference.",
+            "b": "Marvin Minsky at the MIT AI Lab establishment.",
+            "c": "John McCarthy in 1956 at the Dartmouth conference.",
+            "d": "Claude Shannon at the Bell Labs Symposium."
         },
         "correct_answer": "c",
-        "timestamp": "00:01:17,520",
-        "seconds": 77,
-        "youtube_url": "https://youtu.be/cZwb8zqAPXc?t=77s",
-        "explanation": "Explaination: The video lists \"Major classes include: Amino acids such as glycine, glutamate, aspartate, and GABA; Peptides such as beta-endorphin and substance P; Monoamines such as dopamine, serotonin, and histamine; and Acetylcholine.\" Steroids are not listed as a major class."
+        "timestamp": "00:00:40,079",
+        "seconds": 40,
+        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=40s",
+        "explanation": "Explanation: The transcript states, \"The term artificial intelligence was first coined by John McCarthy in 1956 at the Dartmouth conference\"."
     },
     {
-        "question": "What is the primary characteristic of a synapse regarding the connection between neurons?",
+        "question": "What does AI ethics primarily refer to?",
         "options": {
-            "a": "It is a direct anatomical fusion of two neurons.",
-            "b": "It ensures complete electrical isolation between neurons.",
-            "c": "It provides a physiological continuity for nerve impulse transmission.",
-            "d": "It functions solely as a physical bridge, without chemical involvement."
+            "a": "The study of artificial intelligence development only.",
+            "b": "Principles and practices for developing and using AI ethically, unbiased, transparent, and accountable.",
+            "c": "Ensuring AI systems are always accurate without human intervention.",
+            "d": "The historical impact of AI on society."
         },
-        "correct_answer": "c",
-        "timestamp": "00:04:45,840",
-        "seconds": 285,
-        "youtube_url": "https://youtu.be/3I_Av_YPQsU_PLACEHOLDER?t=285s",
-        "explanation": "Explanation: The speaker explicitly states that a synapse is a connection between neurons for nerve impulse transmission, and it is not an anatomical connection but rather a physiological continuity between nerves."
-    },
-    {
-        "question": "According to the video, which type of synapse is predominantly found in the human body?",
-        "options": {
-            "a": "Electrical synapse",
-            "b": "Axo-axonic synapse",
-            "c": "Chemical synapse",
-            "d": "Axo-dendritic synapse"
-        },
-        "correct_answer": "c",
-        "timestamp": "00:04:16,040",
-        "seconds": 256,
-        "youtube_url": "https://youtu.be/3I_Av_YPQsU_PLACEHOLDER?t=256s",
-        "explanation": "Explanation: The speaker clearly mentions that electrical synapses are not found in the human body, and we primarily study chemical synapses."
-    },
-    {
-        "question": "What causes voltage-gated calcium channels to open at the synaptic terminal of a neuron?",
-        "options": {
-            "a": "The neuron reaching its resting potential of -70 mV",
-            "b": "An influx of chloride ions making the neuron more negative",
-            "c": "The depolarization of the synaptic terminal due to the action potential (sodium influx)",
-            "d": "The release of neurotransmitters into the synaptic cleft"
-        },
-        "correct_answer": "c",
-        "timestamp": "00:01:36,270",
-        "seconds": 96,
-        "youtube_url": "https://youtu.be/fhiJo1QYGtA?t=96s",
-        "explanation": "Explanation: The transcript states that when the end of the neuron becomes very positive due to the action potential (sodium influx), it stimulates the voltage-gated calcium channels to open."
-    },
-    {
-        "question": "What is the primary role of calcium ions once they enter the synaptic terminal?",
-        "options": {
-            "a": "To directly open sodium channels on the postsynaptic neuron",
-            "b": "To make the inside of the presynaptic neuron more negative",
-            "c": "To stimulate vesicles containing neurotransmitters to move and fuse with the presynaptic membrane",
-            "d": "To generate a new action potential within the presynaptic neuron"
-        },
-        "correct_answer": "c",
-        "timestamp": "00:01:53,700",
+        "correct_answer": "b",
+        "timestamp": "00:01:53,880",
         "seconds": 113,
-        "youtube_url": "https://youtu.be/fhiJo1QYGtA?t=113s",
-        "explanation": "Explanation: The speaker explains that when calcium enters the synaptic terminals, it stimulates the vesicles (which contain neurotransmitters) to start moving towards the membrane, fuse with it, and release their contents."
+        "youtube_url": "https://youtu.be/COgvUFGLPCs?t=113s",
+        "explanation": "Explanation: The video explicitly states, \"AI ethics refers to the principles and practices that ensure artificial intelligence systems are developed and used in a way that is ethical, unbiased, transparent, and accountable.\""
     },
     {
-        "question": "According to the video, what is the general sequence of signal transmission across a synapse?",
+        "question": "According to the video, what is a primary reason AI ethics is crucial, especially if AI systems are not carefully designed?",
         "options": {
-            "a": "Chemical signal -> Electrical signal -> Chemical signal",
-            "b": "Electrical signal -> Electrical signal -> Chemical signal",
-            "c": "Electrical signal -> Chemical signal -> Electrical signal",
-            "d": "Chemical signal -> Electrical signal -> Electrical signal"
+            "a": "To increase the processing speed of AI algorithms.",
+            "b": "To ensure AI systems only handle trivial tasks.",
+            "c": "To prevent AI from continuing and amplifying societal biases.",
+            "d": "To replace human decision-making entirely."
         },
         "correct_answer": "c",
-        "timestamp": "00:03:08,890",
-        "seconds": 188,
-        "youtube_url": "https://youtu.be/fhiJo1QYGtA?t=188s",
-        "explanation": "Explanation: The speaker explicitly summarizes the process by saying, \"what you get is an electrical signal then a chemical signal then an electrical signal again.\""
+        "timestamp": "00:02:21,920",
+        "seconds": 141,
+        "youtube_url": "https://youtu.be/COgvUFGLPCs?t=141s",
+        "explanation": "Explanation: The video highlights that \"AI systems might seem to be unbiased but if not designed carefully they can actually continue and amplify societal biases,\" using Google Gemini's mistakes as a key example of this problem."
+    },
+    {
+        "question": "What is the speaker's main argument regarding the current focus of AI discussions?",
+        "options": {
+            "a": "That the primary concern should be achieving the AI singularity.",
+            "b": "That AI poses an immediate existential threat to humanity which must be prevented at all costs.",
+            "c": "That focusing on hypothetical future sci-fi scenarios distracts from AI's current, tangible impacts and ethical considerations.",
+            "d": "That AI's benefits far outweigh any potential negative consequences, making current concerns overblown."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:03:38,840",
+        "seconds": 218,
+        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=218s",
+        "explanation": "Explanation: The speaker explicitly states that instead of focusing on \"future sci-fi scenarios\" or \"existential risk,\" the discussion should shift to \"current tangible impacts\" and the work needed to address them."
+    },
+    {
+        "question": "According to the speaker, what is a significant environmental concern regarding large language models like Bloom and GPT-3?",
+        "options": {
+            "a": "They require vast amounts of physical storage space on local devices, contributing to e-waste.",
+            "b": "Their training and operation consume substantial energy and emit considerable carbon dioxide.",
+            "c": "They deplete rare earth minerals used in their construction, leading to resource scarcity.",
+            "d": "They generate significant heat, contributing directly to urban heat island effects."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:01:50,148",
+        "seconds": 110,
+        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=110s",
+        "explanation": "Explanation: The speaker details how AI models, especially large language models, live on the cloud and are powered by \"vast amounts of energy,\" leading to significant carbon dioxide emissions during their training and use. For example, training Bloom alone emitted 25 tons of carbon dioxide."
+    },
+    {
+        "question": "What specific problem related to AI training data are organizations like Spawning.ai working to address for artists?",
+        "options": {
+            "a": "The inability of AI models to accurately replicate unique artistic styles without proper licensing.",
+            "b": "The challenge of preventing AI from generating new art in the exact style of living artists.",
+            "c": "The lack of fair compensation mechanisms for artists whose work is used commercially by AI.",
+            "d": "The difficulty for artists to prove their work was used without consent in AI model training, leading to copyright infringement issues."
+        },
+        "correct_answer": "d",
+        "timestamp": "00:04:24,302",
+        "seconds": 264,
+        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=264s",
+        "explanation": "Explanation: The speaker explains that it has been \"really difficult for artists to prove that their life's work was used\" to train AI models without their consent. Spawning.ai created a tool to help artists search datasets for their work to gather \"crucial evidence\" for copyright infringement cases and is working on opt-in/opt-out mechanisms."
     }
 ]

@@ -35,6 +35,8 @@ Directory structure:
     │   ├── index.html
     │   ├── package.json
     │   ├── vite.config.js
+    │   ├── public/
+    │   │   └── _redirects
     │   └── src/
     │       ├── App.jsx
     │       ├── index.css
@@ -62,18 +64,8 @@ Directory structure:
     │           ├── contentScan.js
     │           ├── firebase.js
     │           └── getCurrentUserUID.js
-    ├── transcripts/
-    │   └── multi_mcqs.json
-    └── vectorstores/
-        ├── book_2IUpOTCYcLfJ1fLY8jItUCw11in1_book2/
-        │   ├── index.faiss
-        │   └── index.pkl
-        ├── book_gvpHdrU1F1ZmUy7y4TqTLHsLVMR2_Lab_Manuals_CNS_Assignment_01/
-        │   ├── index.faiss
-        │   └── index.pkl
-        └── yt_gvpHdrU1F1ZmUy7y4TqTLHsLVMR2_N-O4w6PynGY/
-            ├── index.faiss
-            └── index.pkl
+    └── transcripts/
+        └── multi_mcqs.json
 
 ================================================
 FILE: db.sqlite3
@@ -2098,6 +2090,7 @@ import re
 import json
 import hashlib
 import logging
+import time
 from typing import List, Dict, Optional, Union
 from yt_dlp import YoutubeDL
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -2108,17 +2101,40 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 import google.generativeai as genai
 import requests
+import os
+from typing import List, Dict, Union, Optional
+from datetime import timedelta
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+import json
 
-# Disable yt-dlp logger to suppress ffmpeg warnings
-logging.getLogger('yt_dlp').setLevel(logging.ERROR)
+import os
+from typing import List, Dict, Tuple, Optional
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+import json
+from datetime import datetime, timedelta
+import hashlib
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+from googleapiclient.discovery import build
 
 class YouTubeProcessor:
     def __init__(self):
+        self.youtube = build('youtube', 'v3', developerKey=os.getenv("YOUTUBE_API_KEY"))
         self.groq_api_key = os.getenv("GROQ_API_KEY")
         self.groq_model = "deepseek-r1-distill-llama-70b"
         genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
         self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         self.supported_languages = ['en', 'hi']  # English and Hindi (English first)
+        self.transcript_cache = {}
+        self.last_request_time = None
+        self.request_count = 0
+        self.MAX_REQUESTS_PER_MINUTE = 50  # YouTube API quota limit
 
     @staticmethod
     def clean_text(text: str) -> str:
@@ -2185,37 +2201,88 @@ class YouTubeProcessor:
         video_id = YouTubeProcessor.extract_video_id(video_url)
         return f"https://www.youtube.com/watch?v={video_id}&t={int(timestamp)}s"
 
-    def get_transcript(self, video_id: str) -> Union[List[Dict], None]:
-        """Get transcript with preference for English, then Hindi (including auto-generated), then None"""
-        # First try to get English transcript (manual or auto-generated)
+    def _rate_limit(self):
+        """Handle API rate limiting"""
+        now = datetime.now()
+        if self.last_request_time and (now - self.last_request_time) < timedelta(seconds=60):
+            self.request_count += 1
+            if self.request_count >= self.MAX_REQUESTS_PER_MINUTE:
+                wait_time = 60 - (now - self.last_request_time).seconds
+                logger.warning(f"Rate limit reached. Waiting {wait_time} seconds...")
+                time.sleep(wait_time)
+                self.request_count = 0
+                self.last_request_time = datetime.now()
+        else:
+            self.last_request_time = now
+            self.request_count = 1
+
+
+    def get_transcript(self, video_id: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """
+        Get transcript using YouTube Data API with enhanced error handling
+        Returns:
+            tuple: (transcript_data, language_code) or (None, None) if not available
+        """
+        # Check cache first
+        cache_key = hashlib.md5(video_id.encode()).hexdigest()
+        if cache_key in self.transcript_cache:
+            return self.transcript_cache[cache_key]
+
         try:
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            print("Found English transcript")
-            return transcript, 'en'
+            self._rate_limit()
+            
+            # Step 1: List available caption tracks
+            captions = self.youtube.captions().list(
+                part="snippet",
+                videoId=video_id
+            ).execute()
+
+            if not captions.get('items'):
+                logger.info(f"No captions available for video {video_id}")
+                return None, None
+
+            # Step 2: Find preferred language track
+            preferred_languages = ['en', 'hi']  # English first, then Hindi
+            caption_track = None
+            
+            for lang in preferred_languages:
+                for item in captions['items']:
+                    if item['snippet']['language'] == lang and item['snippet']['trackKind'] != 'asr':  # Prefer manual over auto-generated
+                        caption_track = item
+                        break
+                if caption_track:
+                    break
+
+            if not caption_track:
+                logger.info(f"No supported language captions for video {video_id}")
+                return None, None
+
+            # Step 3: Download the caption track
+            self._rate_limit()
+            transcript = self.youtube.captions().download(
+                id=caption_track['id'],
+                tfmt='srt'  # SubRip format for timestamps
+            ).execute()
+
+            # Step 4: Parse and format the transcript
+            formatted_transcript = self._parse_transcript(transcript)
+            
+            # Cache the result for 1 hour
+            self.transcript_cache[cache_key] = (formatted_transcript, caption_track['snippet']['language'])
+            
+            return formatted_transcript, caption_track['snippet']['language']
+
+        except HttpError as e:
+            if e.resp.status == 403:
+                logger.error("YouTube API quota exceeded")
+            elif e.resp.status == 404:
+                logger.error(f"Video or captions not found: {video_id}")
+            else:
+                logger.error(f"YouTube API HTTP error: {str(e)}")
+            return None, None
         except Exception as e:
-            print(f"Couldn't find English transcript: {str(e)}")
-        
-        # If English not available, try Hindi (including auto-generated)
-        try:
-            # First try manual Hindi transcript
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
-            print("Found manual Hindi transcript")
-            return transcript, 'hi'
-        except NoTranscriptFound:
-            # If no manual Hindi transcript, try auto-generated Hindi
-            try:
-                transcript = YouTubeTranscriptApi.list_transcripts(video_id)
-                for t in transcript:
-                    if t.language_code == 'hi' and t.is_generated:
-                        print("Found auto-generated Hindi transcript")
-                        return t.fetch(), 'hi'
-            except Exception as e:
-                print(f"Couldn't find Hindi transcript (manual or auto-generated): {str(e)}")
-        except Exception as e:
-            print(f"Error while fetching Hindi transcript: {str(e)}")
-        
-        # If neither is available, return None
-        return None, None
+            logger.error(f"Unexpected error: {str(e)}")
+            return None, None
 
     def load_youtube_transcript(self, video_url: str) -> List[Document]:
         """Load and process YouTube transcript into chunks with timestamps"""
@@ -2439,18 +2506,113 @@ Format your response as:
     }
 
     def process_video(self, video_url: str, store_name: str) -> Dict:
-        """Full processing pipeline for a YouTube video"""
-        chunks = self.load_youtube_transcript(video_url)
-        vectorstore = self.create_vector_store(chunks, store_name)
-        video_info = self.get_youtube_video_info(video_url)
+        """Full processing pipeline for a YouTube video using official API"""
+        video_id = self.extract_video_id(video_url)
         
-        return {
-            "vectorstore": vectorstore,
-            "video_info": video_info,
-            "chunks": chunks,
-            "store_name": store_name
-        }
+        try:
+            # Get video metadata
+            video_info = self._get_video_info(video_id)
+            
+            # Get transcript
+            transcript, language = self.get_transcript(video_id)
+            if not transcript:
+                raise Exception("No transcript available")
+            
+            # Process into chunks (using your existing method)
+            chunks = self._create_chunks_from_transcript(
+                transcript,
+                video_url,
+                video_info
+            )
+            
+            return {
+                "video_info": video_info,
+                "chunks": chunks,
+                "language": language,
+                "store_name": store_name
+            }
+            
+        except Exception as e:
+            print(f"Failed to process video: {str(e)}")
+            raise
 
+
+    def _parse_transcript(self, transcript: str) -> List[Dict]:
+        """Parse SRT formatted transcript into our standard format"""
+        entries = []
+        blocks = transcript.strip().split('\n\n')
+        
+        for block in blocks:
+            lines = block.split('\n')
+            if len(lines) >= 3:
+                # Parse timestamp line (e.g., "00:00:01,000 --> 00:00:04,000")
+                time_range = lines[1]
+                start_time = self._srt_time_to_seconds(time_range.split('-->')[0].strip())
+                
+                # Combine text lines
+                text = ' '.join(lines[2:])
+                
+                entries.append({
+                    'text': text,
+                    'start': start_time,
+                    'duration': 0  # Will calculate below
+                })
+        
+        # Calculate durations
+        for i in range(len(entries)):
+            if i < len(entries) - 1:
+                entries[i]['duration'] = entries[i+1]['start'] - entries[i]['start']
+            else:
+                entries[i]['duration'] = 1  # Default duration for last entry
+        
+        return entries
+
+    def _srt_time_to_seconds(self, time_str: str) -> float:
+        """Convert SRT timestamp to seconds"""
+        hh_mm_ss, mmm = time_str.split(',')
+        hh, mm, ss = hh_mm_ss.split(':')
+        return int(hh) * 3600 + int(mm) * 60 + int(ss) + int(mmm)/1000
+
+    def _get_video_info(self, video_id: str) -> Dict:
+        """Get video metadata with enhanced error handling"""
+        try:
+            self._rate_limit()
+            response = self.youtube.videos().list(
+                part="snippet,contentDetails",
+                id=video_id
+            ).execute()
+            
+            if not response.get('items'):
+                raise Exception("Video not found")
+                
+            item = response['items'][0]
+            return {
+                'title': item['snippet']['title'],
+                'description': item['snippet']['description'],
+                'thumbnail': item['snippet']['thumbnails']['high']['url'],
+                'duration': self._parse_duration(item['contentDetails']['duration']),
+                'channel': item['snippet']['channelTitle']
+            }
+            
+        except HttpError as e:
+            logger.error(f"Video info API error: {str(e)}")
+            return {}
+        except Exception as e:
+            logger.error(f"Video info error: {str(e)}")
+            return {}
+
+    def _parse_duration(self, duration: str) -> int:
+        """Convert ISO 8601 duration to seconds"""
+        time_delta = timedelta()
+        if 'H' in duration:
+            time_delta += timedelta(hours=int(duration.split('H')[0][2:]))
+            duration = duration.split('H')[1]
+        if 'M' in duration:
+            time_delta += timedelta(minutes=int(duration.split('M')[0]))
+            duration = duration.split('M')[1]
+        if 'S' in duration:
+            time_delta += timedelta(seconds=int(duration.split('S')[0]))
+        return int(time_delta.total_seconds())
 
 
 ================================================
@@ -3070,6 +3232,13 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(),tailwindcss()],
 })
+
+
+
+================================================
+FILE: frontend/public/_redirects
+================================================
+/*    /index.html   200
 
 
 
@@ -5772,18 +5941,18 @@ const AuthForm = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-indigo-700/5 animate-pulse"></div>
       </div>
 
-      <div className="relative h-screen flex items-center justify-center p-4 overflow-hidden">
+      <div className="relative h-screen flex items-center justify-center p-4 overflow-auto">
 
-  <div className={`w-full max-w-[800px] h-[800px] overflow-hidden transition-all duration-1000 rounded-3xl ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+  <div className={`w-full max-w-[800px] min-h-screen lg:h-[800px] overflow-hidden transition-all duration-1000 rounded-3xl ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
 
 
           {/* Main Container - Horizontal Layout */}
-          <div className="bg-gradient-to-br from-gray-800/90 to-slate-900/90 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-sm border border-gray-700/50">
+          <div className="bg-gradient-to-br from-gray-800/90 to-slate-900/90 rounded-3xl shadow-2xl overflow-auto backdrop-blur-sm border border-gray-700/50">
             <div className="grid lg:grid-cols-2 min-h-[600px]">
 
 
               {/* Left Side - Branding & Features */}
-              <div className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-700/20 p-4 lg:p-6 flex flex-col justify-center relative overflow-hidden">
+              <div className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-700/20 p-4 lg:p-6 flex flex-col justify-center relative overflow-auto">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-700/10 animate-pulse"></div>
 
                 <div className="relative z-10">
@@ -7394,180 +7563,144 @@ FILE: transcripts/multi_mcqs.json
 ================================================
 [
     {
-        "question": "What is a key distinguishing characteristic of Constraint Satisfaction Problems (CSPs) compared to other search techniques like uninformed or informed search?",
+        "question": "According to the speaker, what is one significant concern regarding artificial intelligence that keeps them up at night?",
         "options": {
-            "a": "CSPs primarily use tree or graph methods for problem exploration.",
-            "b": "CSPs rely heavily on heuristic functions for optimal solutions.",
-            "c": "The representation method in CSPs is totally different from state space representation.",
-            "d": "CSPs are exclusively used for problems with infinite variables and domains."
+            "a": "The rapid pace of technological advancements in AI.",
+            "b": "The potential for AI to become self-aware and autonomous.",
+            "c": "People being unaware that AI is making decisions directly impacting their lives.",
+            "d": "The high cost of developing advanced AI systems."
         },
         "correct_answer": "c",
-        "timestamp": "00:59:565",
-        "seconds": 59,
-        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=59s",
-        "explanation": "Explanation: The video states that \"in constraint satisfaction, the way of representing is totally different\" compared to previous problems that used state space representation and explored problems using tree or graph methods."
+        "timestamp": "00:00:16,160",
+        "seconds": 16,
+        "youtube_url": "https://youtu.be/aGwYtUzMQUk?t=16s",
+        "explanation": "Explanation: The speaker explicitly states that a concern keeping them up at night is that \"people may have no idea that an artificial intelligence is making a decision that directly impacts their lives.\""
     },
     {
-        "question": "According to the video, what are the three fundamental components used to represent any Constraint Satisfaction Problem (CSP)?",
+        "question": "What is the primary reason given for why many AI proof of concepts fail within organizations?",
         "options": {
-            "a": "Variables, Solutions, and Rules",
-            "b": "Values, Decisions, and Conditions",
-            "c": "Vertices, Dimensions, and Choices",
-            "d": "Variables, Domains, and Constraints"
+            "a": "Lack of sufficient computing power.",
+            "b": "Insufficient data for model training.",
+            "c": "People's distrust of the AI model's results.",
+            "d": "High employee turnover in AI teams."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:01:25,120",
+        "seconds": 85,
+        "youtube_url": "https://youtu.be/aGwYtUzMQUk?t=85s",
+        "explanation": "Explanation: The speaker directly states that AI proof of concepts often fail \"because people do not trust the results from that AI model.\""
+    },
+    {
+        "question": "**What is the primary definition of Artificial Intelligence (AI) as described in the transcript?**",
+        "options": {
+            "a": "A type of robot designed for physical labor.",
+            "b": "The simulation of human intelligence processes by machines.",
+            "c": "A new programming language for complex calculations.",
+            "d": "The study of human-computer interaction."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:00:02,720",
+        "seconds": 2,
+        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=2s",
+        "explanation": "Explanation: The transcript explicitly states, \"Artificial intelligence AI refers to the simulation of human intelligence processes by machines particularly computer systems.\""
+    },
+    {
+        "question": "**According to the transcript, which of the following is a key characteristic of \"General AI\"?**",
+        "options": {
+            "a": "Designed to perform a narrow task like facial recognition.",
+            "b": "Capable of performing any intellectual task that a human can do.",
+            "c": "Primarily used for internet searches and data analysis.",
+            "d": "Limited to solving mathematical theorems and playing chess."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:00:27,160",
+        "seconds": 27,
+        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=27s",
+        "explanation": "Explanation: The video categorizes AI into \"narrow AI... designed to perform a narrow task\" and \"general AI which can perform any intellectual task that a human can do.\""
+    },
+    {
+        "question": "**Who is credited with first coining the term \"Artificial Intelligence\" and at what significant event?**",
+        "options": {
+            "a": "Alan Turing at the Bletchley Park Conference.",
+            "b": "Marvin Minsky at the MIT AI Lab establishment.",
+            "c": "John McCarthy in 1956 at the Dartmouth conference.",
+            "d": "Claude Shannon at the Bell Labs Symposium."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:40,079",
+        "seconds": 40,
+        "youtube_url": "https://youtu.be/r2rNMmf-zXQ?t=40s",
+        "explanation": "Explanation: The transcript states, \"The term artificial intelligence was first coined by John McCarthy in 1956 at the Dartmouth conference\"."
+    },
+    {
+        "question": "What does AI ethics primarily refer to?",
+        "options": {
+            "a": "The study of artificial intelligence development only.",
+            "b": "Principles and practices for developing and using AI ethically, unbiased, transparent, and accountable.",
+            "c": "Ensuring AI systems are always accurate without human intervention.",
+            "d": "The historical impact of AI on society."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:01:53,880",
+        "seconds": 113,
+        "youtube_url": "https://youtu.be/COgvUFGLPCs?t=113s",
+        "explanation": "Explanation: The video explicitly states, \"AI ethics refers to the principles and practices that ensure artificial intelligence systems are developed and used in a way that is ethical, unbiased, transparent, and accountable.\""
+    },
+    {
+        "question": "According to the video, what is a primary reason AI ethics is crucial, especially if AI systems are not carefully designed?",
+        "options": {
+            "a": "To increase the processing speed of AI algorithms.",
+            "b": "To ensure AI systems only handle trivial tasks.",
+            "c": "To prevent AI from continuing and amplifying societal biases.",
+            "d": "To replace human decision-making entirely."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:02:21,920",
+        "seconds": 141,
+        "youtube_url": "https://youtu.be/COgvUFGLPCs?t=141s",
+        "explanation": "Explanation: The video highlights that \"AI systems might seem to be unbiased but if not designed carefully they can actually continue and amplify societal biases,\" using Google Gemini's mistakes as a key example of this problem."
+    },
+    {
+        "question": "What is the speaker's main argument regarding the current focus of AI discussions?",
+        "options": {
+            "a": "That the primary concern should be achieving the AI singularity.",
+            "b": "That AI poses an immediate existential threat to humanity which must be prevented at all costs.",
+            "c": "That focusing on hypothetical future sci-fi scenarios distracts from AI's current, tangible impacts and ethical considerations.",
+            "d": "That AI's benefits far outweigh any potential negative consequences, making current concerns overblown."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:03:38,840",
+        "seconds": 218,
+        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=218s",
+        "explanation": "Explanation: The speaker explicitly states that instead of focusing on \"future sci-fi scenarios\" or \"existential risk,\" the discussion should shift to \"current tangible impacts\" and the work needed to address them."
+    },
+    {
+        "question": "According to the speaker, what is a significant environmental concern regarding large language models like Bloom and GPT-3?",
+        "options": {
+            "a": "They require vast amounts of physical storage space on local devices, contributing to e-waste.",
+            "b": "Their training and operation consume substantial energy and emit considerable carbon dioxide.",
+            "c": "They deplete rare earth minerals used in their construction, leading to resource scarcity.",
+            "d": "They generate significant heat, contributing directly to urban heat island effects."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:01:50,148",
+        "seconds": 110,
+        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=110s",
+        "explanation": "Explanation: The speaker details how AI models, especially large language models, live on the cloud and are powered by \"vast amounts of energy,\" leading to significant carbon dioxide emissions during their training and use. For example, training Bloom alone emitted 25 tons of carbon dioxide."
+    },
+    {
+        "question": "What specific problem related to AI training data are organizations like Spawning.ai working to address for artists?",
+        "options": {
+            "a": "The inability of AI models to accurately replicate unique artistic styles without proper licensing.",
+            "b": "The challenge of preventing AI from generating new art in the exact style of living artists.",
+            "c": "The lack of fair compensation mechanisms for artists whose work is used commercially by AI.",
+            "d": "The difficulty for artists to prove their work was used without consent in AI model training, leading to copyright infringement issues."
         },
         "correct_answer": "d",
-        "timestamp": "01:33:747",
-        "seconds": 93,
-        "youtube_url": "https://youtu.be/AgyCSmDVk5s?t=93s",
-        "explanation": "Explanation: The speaker explicitly states that each problem in CSP is represented with three components: V (set of variables), D (set of domains), and C (set of constraints)."
-    },
-    {
-        "question": "What is a key characteristic that distinguishes Constraint Satisfaction Problems (CSPs) from heuristic search techniques like informed search?",
-        "options": {
-            "a": "CSPs require the goal state to be specified beforehand.",
-            "b": "CSPs operate by explicitly discovering a predefined path to the goal.",
-            "c": "In CSPs, the goal state is not specified in advance and must be discovered based on specified constraints.",
-            "d": "CSPs are limited to problems where only numerical values are involved."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:01:17,930",
-        "seconds": 77,
-        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=77s",
-        "explanation": "Explanation: The video states that in heuristic search techniques, the goal state is already known, but in Constraint Satisfaction Problems, the goal state is not specified and must be discovered based on the given constraints."
-    },
-    {
-        "question": "According to the video, what are the three main components upon which Constraint Satisfaction Problems (CSPs) depend?",
-        "options": {
-            "a": "Nodes, Edges, and Paths",
-            "b": "Variables, Domains, and Constraints",
-            "c": "Scope, Relation, and Values",
-            "d": "Initial State, Intermediate States, and Goal State"
-        },
-        "correct_answer": "b",
-        "timestamp": "00:03:50,709",
-        "seconds": 230,
-        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=230s",
-        "explanation": "Explanation: The video explicitly identifies the three main components of Constraint Satisfaction Problems as X (set of variables), D (set of domains), and C (set of constraints)."
-    },
-    {
-        "question": "What is the primary advantage of \"Intelligent Backtracking\" in Constraint Satisfaction Problems (CSPs) compared to simple backtracking?",
-        "options": {
-            "a": "It restarts the entire problem-solving process from the initial state upon encountering an error.",
-            "b": "It only allows backtracking when numerical errors occur, not logical ones.",
-            "c": "It intelligently backtracks to the specific step where the error likely originated, rather than the immediately preceding step or the beginning.",
-            "d": "It automatically solves the problem without requiring any backtracking."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:07:39,949",
-        "seconds": 459,
-        "youtube_url": "https://youtu.be/ZtkEhEb9cMM?t=459s",
-        "explanation": "Explanation: The video explains that intelligent backtracking allows the system to backtrack directly to the specific step where the mistake was made, rather than having to restart from the beginning or just the immediately previous step, which is characteristic of simple backtracking."
-    },
-    {
-        "question": "What is the primary objective of a Constraint Satisfaction Problem (CSP) in the context discussed?",
-        "options": {
-            "a": "To find the optimal path in a graph.",
-            "b": "To allocate values to variables such that all specified conditions are met.",
-            "c": "To develop new programming languages.",
-            "d": "To forecast future data trends using historical information."
-        },
-        "correct_answer": "b",
-        "timestamp": "03:57:439",
-        "seconds": 237,
-        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=237s",
-        "explanation": "Explanation: The video defines CSPs as problems in computer science, especially AI, where the goal is to assign values to variables from their respective domains in a way that satisfies a given set of constraints or conditions."
-    },
-    {
-        "question": "According to the speaker, what are the three fundamental components that constitute a Constraint Satisfaction Problem (CSP)?",
-        "options": {
-            "a": "Algorithms, data structures, and computational complexity.",
-            "b": "Input variables, output results, and processing time.",
-            "c": "Variables, a domain for each variable, and a set of constraints.",
-            "d": "Functions, procedures, and memory allocation."
-        },
-        "correct_answer": "c",
-        "timestamp": "04:05:560",
-        "seconds": 245,
-        "youtube_url": "https://youtu.be/uxPl1qxRaEA?t=245s",
-        "explanation": "Explanation: The speaker explicitly states that a CSP consists of variables, a domain for each variable (the range of possible values), and a set of constraints that define the allowable combinations of values."
-    },
-    {
-        "question": "What is considered the biggest application for Artificial Intelligence, as stated in the video?",
-        "options": {
-            "a": "Data Analysis",
-            "b": "Machine Learning",
-            "c": "Problems Solving",
-            "d": "Natural Language Processing"
-        },
-        "correct_answer": "c",
-        "timestamp": "00:00:09,280",
-        "seconds": 9,
-        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=9s",
-        "explanation": "Explanation: The speaker explicitly states at the beginning of the video that \"Problem solving is the biggest application for Artificial Intelligence.\""
-    },
-    {
-        "question": "According to the video, through which two main components does an AI agent interact with its environment?",
-        "options": {
-            "a": "Input and Output",
-            "b": "Perceptors and Actuators",
-            "c": "Senses and Effectors",
-            "d": "Sensors and Motors"
-        },
-        "correct_answer": "c",
-        "timestamp": "00:00:33,879",
-        "seconds": 33,
-        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=33s",
-        "explanation": "Explanation: The video explains that an agent perceives its environment through \"senses\" and acts upon the environment using \"effectors.\""
-    },
-    {
-        "question": "What are the two main strategies mentioned in the video for solving problems in Artificial Intelligence?",
-        "options": {
-            "a": "State-space Search and Goal-based Search",
-            "b": "Optimal Search and Sub-optimal Search",
-            "c": "Uninformed Search and Informed Search",
-            "d": "Breadth-First Search and Depth-First Search"
-        },
-        "correct_answer": "c",
-        "timestamp": "00:08:07,849",
-        "seconds": 487,
-        "youtube_url": "https://youtu.be/y2jueJj0SGY?t=487s",
-        "explanation": "Explanation: The speaker states, \"There are two strategies to solve problems: first is Uninformed Search... and second is Informed Search.\""
+        "timestamp": "00:04:24,302",
+        "seconds": 264,
+        "youtube_url": "https://youtu.be/eXdVDhOGqoE?t=264s",
+        "explanation": "Explanation: The speaker explains that it has been \"really difficult for artists to prove that their life's work was used\" to train AI models without their consent. Spawning.ai created a tool to help artists search datasets for their work to gather \"crucial evidence\" for copyright infringement cases and is working on opt-in/opt-out mechanisms."
     }
 ]
-
-
-================================================
-FILE: vectorstores/book_2IUpOTCYcLfJ1fLY8jItUCw11in1_book2/index.faiss
-================================================
-[Non-text file]
-
-
-================================================
-FILE: vectorstores/book_2IUpOTCYcLfJ1fLY8jItUCw11in1_book2/index.pkl
-================================================
-[Non-text file]
-
-
-================================================
-FILE: vectorstores/book_gvpHdrU1F1ZmUy7y4TqTLHsLVMR2_Lab_Manuals_CNS_Assignment_01/index.faiss
-================================================
-[Non-text file]
-
-
-================================================
-FILE: vectorstores/book_gvpHdrU1F1ZmUy7y4TqTLHsLVMR2_Lab_Manuals_CNS_Assignment_01/index.pkl
-================================================
-[Non-text file]
-
-
-================================================
-FILE: vectorstores/yt_gvpHdrU1F1ZmUy7y4TqTLHsLVMR2_N-O4w6PynGY/index.faiss
-================================================
-[Non-text file]
-
-
-================================================
-FILE: vectorstores/yt_gvpHdrU1F1ZmUy7y4TqTLHsLVMR2_N-O4w6PynGY/index.pkl
-================================================
-[Non-text file]
 
