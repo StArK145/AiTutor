@@ -35,6 +35,8 @@ function ResultsView({
 }) {
   const [loading, setLoading] = useState(false);
   const [quizLoading, setQuizLoading] = useState(false);
+  const [showQuizNotice, setShowQuizNotice] = useState(false);
+
   const navigate = useNavigate();
   const { setQuestions, setUserAnswers, setCurrent, setShowResults } =
     useQuiz();
@@ -86,32 +88,60 @@ function ResultsView({
   };
 
   const handleGenerateQuiz = async () => {
-    console.log("Generating quiz for these videos:", videos);
-    setQuizLoading(true); // start loading
+    setShowQuizNotice(true);
+    // console.log("Generating quiz for these videos:", videos);
+    // setQuizLoading(true); // start loading
 
-    try {
-      const res = await generateMultiVideoMCQs(videos);
-      if (res.error) {
-        setError(res.error);
-      } else {
-        console.log("Quiz generated successfully:", res);
-        setQuestions(res.questions);
-        setUserAnswers({});
-        setCurrent(0);
-        navigate("/quiz");
-      }
-    } catch (err) {
-      setError(err.message || "Failed to generate quiz");
-    } finally {
-      setQuizLoading(false); // stop loading
-    }
+    // try {
+    //   const res = await generateMultiVideoMCQs(videos);
+    //   if (res.error) {
+    //     setError(res.error);
+    //   } else {
+    //     console.log("Quiz generated successfully:", res);
+    //     setQuestions(res.questions);
+    //     setUserAnswers({});
+    //     setCurrent(0);
+    //     navigate("/quiz");
+    //   }
+    // } catch (err) {
+    //   setError(err.message || "Failed to generate quiz");
+    // } finally {
+    //   setQuizLoading(false); // stop loading
+    // }
   };
 
   return (
     <div className="min-h-screen p-6 overflow-x-hidden">
       {quizLoading && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
-            <QuizLoading />
+          <QuizLoading />
+        </div>
+      )}
+      {showQuizNotice && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="max-w-lg w-full bg-gradient-to-br from-yellow-900 to-orange-900 border border-yellow-500/30 rounded-3xl p-8 shadow-2xl text-white space-y-6 relative">
+            <button
+              onClick={() => setShowQuizNotice(false)}
+              className="absolute top-3 right-4 text-yellow-300 hover:text-white text-lg font-bold"
+            >
+              ✖
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="bg-yellow-600 p-3 rounded-full">
+                <AlertCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-yellow-200">
+                  ⚠️ Quiz Generation Unavailable
+                </h2>
+                <p className="text-yellow-100 mt-1">
+                  Due to memory limits on the current server deployment, quiz
+                  generation is temporarily disabled. We're working on
+                  optimizing resources. Please check back soon.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
