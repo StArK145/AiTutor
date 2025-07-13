@@ -115,19 +115,7 @@ export default function Dashboard() {
         </nav>
 
         {/* Bottom section */}
-        {!sidebarCollapsed && (
-          <div className="mt-auto p-4 border-t border-slate-700">
-            <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200 truncate">User</p>
-                <p className="text-xs text-slate-400 truncate">Admin</p>
-              </div>
-            </div>
-          </div>
-        )}
+        
       </aside>
 
       {/* ───────────── Main Content Area ───────────── */}
