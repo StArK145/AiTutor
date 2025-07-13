@@ -1,142 +1,142 @@
 [
     {
-        "question": "What defines an \"agent\" in the context of autonomous systems, according to the video?",
+        "question": "What is the primary characteristic that distinguishes informed searching from uninformed searching?",
         "options": {
-            "a": "Something that can physically move.",
-            "b": "An entity that is programmed with all its behaviors ahead of time.",
-            "c": "An autonomous entity that observes its environment, chooses how to act based on observations, and whose actions change the environment's state.",
-            "d": "A system that only interacts with other agents."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:00:22,400",
-        "seconds": 22,
-        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=22s",
-        "explanation": "Explaination: The video states that an agent is \"something that is autonomous in the sense that it can observe the environment and then on its own choose how to act based on those observations,\" and importantly, \"its actions change the state of the environment.\" Physical movement is a possibility, but not a requirement, and agents can learn rather than being fully pre-programmed."
-    },
-    {
-        "question": "Which of the following best describes the different types of multi-agent systems discussed in the video?",
-        "options": {
-            "a": "Only cooperative agents working together for a common goal.",
-            "b": "Only adversarial agents competing against each other.",
-            "c": "Cooperative, adversarial, or a mix of both types of agents.",
-            "d": "Agents that only react to observations but do not affect the environment."
-        },
-        "correct_answer": "c",
-        "timestamp": "00:01:23,600",
-        "seconds": 83,
-        "youtube_url": "https://youtu.be/qgb0gyrpiGk?t=83s",
-        "explanation": "Explaination: The video explicitly states that multi-agent systems can consist of \"different types of cooperative agents\" trying to work together, be \"adversarial where the entities are trying to maximize their own personal benefit,\" or even be \"a mix of both adversarial and cooperative agents.\""
-    },
-    {
-        "question": "According to the speaker, what was a key revelation from the DeepSeek R1 paper that generated significant excitement?",
-        "options": {
-            "a": "RL's ability to train models with 100x more parameters than supervised learning.",
-            "b": "RL could effectively train smaller models with less compute for powerful reasoning.",
-            "c": "RL fine-tuning was entirely new to the field of LLMs.",
-            "d": "DeepSeek discovered a method to eliminate the need for pre-training in LLMs."
+            "a": "Informed searching guarantees an optimal solution, while uninformed searching does not.",
+            "b": "Uninformed searching uses brute-force methods, while informed searching uses heuristic information.",
+            "c": "Informed searching has higher time complexity compared to uninformed searching.",
+            "d": "Uninformed searching is always quicker than informed searching."
         },
         "correct_answer": "b",
-        "timestamp": "00:00:30,599",
-        "seconds": 30,
-        "youtube_url": "https://youtu.be/someVideoID?t=30s",
-        "explanation": "Explanation: The speaker states that DeepSeek was able to train a very powerful reasoning model by applying reinforcement learning and showed that a smaller model with less compute could work effectively with reinforcement learning, which got people very excited."
+        "timestamp": "00:01:19,571",
+        "seconds": 79,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=79s",
+        "explanation": "Explanation: The transcript explicitly states that informed searching uses \"information\" which is called \"heuristic,\" whereas uninformed searching lacks this domain knowledge or guide, operating as a \"brute force method\" or \"blind searching.\""
     },
     {
-        "question": "What significant finding regarding RLHF (Reinforcement Learning from Human Feedback) was highlighted by the 2022 ChatGPT paper?",
+        "question": "Which of the following terms are commonly used to refer to uninformed searching?",
         "options": {
-            "a": "RLHF completely replaced the need for large pre-trained models.",
-            "b": "Models trained with supervised learning were consistently preferred over RLHF models.",
-            "c": "A smaller model trained with RLHF was consistently preferred by people over a much larger model trained with only supervised learning.",
-            "d": "RLHF was only effective for models with over 100 billion parameters."
+            "a": "Guided search and optimized search",
+            "b": "Heuristic search and polynomial search",
+            "c": "Brute force method and blind searching",
+            "d": "Goal-directed search and approximate search"
         },
         "correct_answer": "c",
-        "timestamp": "00:01:30,360",
-        "seconds": 90,
-        "youtube_url": "https://youtu.be/someVideoID?t=90s",
-        "explanation": "Explanation: The transcript explicitly mentions that with RLHF, a model with only 1.5 billion parameters had outputs consistently preferred by people over a model 100 times the size that was trained with only supervised learning."
+        "timestamp": "00:00:23,213",
+        "seconds": 23,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=23s",
+        "explanation": "Explanation: The speaker directly states that \"we generally call uninformed searching as brute force method or blind searching.\""
     },
     {
-        "question": "What was the main problem encountered with early approaches to RL fine-tuning of language models, as demonstrated by the music generation example?",
+        "question": "What is the simple meaning of \"heuristic\" in artificial intelligence as described in the video?",
         "options": {
-            "a": "The models became too complex and difficult to train.",
-            "b": "RL agents would trivially optimize the reward function at the expense of forgetting the original data distribution.",
-            "c": "It was impossible to incorporate music theory rules into the RL objective.",
-            "d": "The training process required an infinite amount of reward data."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:05:20,520",
-        "seconds": 320,
-        "youtube_url": "https://youtu.be/someVideoID?t=320s",
-        "explanation": "Explanation: The speaker illustrates this problem by showing that RL agents would \"trivially optimize the reward at the expense of kind of erasing everything it learned about the data distribution,\" leading to outputs like infinite C's in the music generation task."
-    },
-    {
-        "question": "What is the primary difference in the speaker's updated Pong environment compared to the first implementation described?",
-        "options": {
-            "a": "The ball moves at a constant speed throughout the game.",
-            "b": "It features two agents playing Pong against each other instead of a single pad against a wall.",
-            "c": "The game includes a human player controlling one of the paddles.",
-            "d": "The ball's speed decreases after each deflection."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:00:17,279",
-        "seconds": 17,
-        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=17s",
-        "explanation": "Explanation: The speaker explicitly states that contrary to the first implementation which had just a single pad against a wall, the updated environment features two agents playing Pong against each other."
-    },
-    {
-        "question": "How does the ball's speed change during gameplay in the updated Pong environment?",
-        "options": {
-            "a": "It remains constant throughout the game.",
-            "b": "It decreases by 20% each time it hits a paddle.",
-            "c": "It increases by 20% each time an agent deflects it.",
-            "d": "It randomly increases or decreases at intervals."
+            "a": "A method to guarantee the optimal solution for any problem.",
+            "b": "A technique for exploring all possible states in a search space.",
+            "c": "Making assumptions or finding a quick solution.",
+            "d": "A process to strictly avoid any form of guessing or estimation."
         },
         "correct_answer": "c",
-        "timestamp": "00:00:39,440",
-        "seconds": 39,
-        "youtube_url": "https://youtu.be/-c-3nRgnnh8?t=39s",
-        "explanation": "Explanation: The speaker mentions that the ball starts with a normal speed, but each time one agent deflects the ball, its speed increases by 20 percent."
+        "timestamp": "00:00:40,639",
+        "seconds": 40,
+        "youtube_url": "https://youtu.be/5F9YzkpnaRw?t=40s",
+        "explanation": "Explanation: The transcript explicitly states that the simple meaning of heuristic is \"making assumption for anything\" and that \"we are trying to guess or we are trying to find a quick solution.\""
     },
     {
-        "question": "What is the main contribution of the paper \"Social Influence as Intrinsic Motivation for Multi-Agent Deep Reinforcement Learning\"?",
+        "question": "What is the primary motivation for using heuristic functions in Artificial Intelligence, especially concerning time complexity?",
         "options": {
-            "a": "Proposing a new algorithm for single-agent reinforcement learning.",
-            "b": "Introducing social influence as an additional reward to encourage cooperation in multi-agent systems.",
-            "c": "Developing new benchmarks for multi-agent competitive games.",
-            "d": "Proving that centralized training is always superior to independent learning."
-        },
-        "correct_answer": "b",
-        "timestamp": "00:01:08,560",
-        "seconds": 68,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=68s",
-        "explanation": "Explanation: The presenter explicitly states that the paper uses \"social influence as an additional reward to encourage agents to learn to cooperate not to be selfish,\" which encapsulates its core contribution."
-    },
-    {
-        "question": "According to the presentation, what is a key characteristic of a \"social dilemma\" in the context of multi-agent reinforcement learning?",
-        "options": {
-            "a": "All agents always achieve their individual maximum reward through selfish actions.",
-            "b": "Agents learn to ignore collective goals and only focus on individual survival.",
-            "c": "An individual must pay a personal cost to provide a resource that is shared by all, leading to potential suboptimal collective outcomes.",
-            "d": "The problem can only be solved with explicit communication channels between agents."
+            "a": "To ensure all possible solutions are explored for maximum accuracy.",
+            "b": "To convert polynomial time problems into non-polynomial problems.",
+            "c": "To find a quick solution and reduce exponential time complexity for NP problems.",
+            "d": "To strictly avoid any form of information or guidance during search."
         },
         "correct_answer": "c",
-        "timestamp": "00:07:14,880",
-        "seconds": 434,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=434s",
-        "explanation": "Explanation: The presenter defines the social dilemma in the \"cleanup\" benchmark by saying, \"any individual must pay a personal cost in order to provide a resource that is shared by all.\" This highlights the conflict between individual gain and collective well-being."
+        "timestamp": "00:01:34,205",
+        "seconds": 94,
+        "youtube_url": "https://youtu.be/5F9YzkpnaRw?t=94s",
+        "explanation": "Explanation: The video states that heuristic is a technique designed to solve a problem quickly and is used to solve \"non polynomial problem in polynomial time\" by reducing the \"exponential time\" complexity often associated with uninformed search methods."
     },
     {
-        "question": "What type of problem formulation is primarily focused on in this paper for multi-agent reinforcement learning?",
+        "question": "What is a key characteristic regarding the optimality of solutions typically provided by heuristic functions?",
         "options": {
-            "a": "Fully Observable Markov Decision Processes (FOMDPs).",
-            "b": "Partially Observable Markov Games (POMGs).",
-            "c": "Decentralized Markov Chains.",
-            "d": "Centralized Control Systems."
+            "a": "They always guarantee an optimal solution.",
+            "b": "They provide a good solution, but not necessarily an optimal one.",
+            "c": "They always lead to a worse solution than blind search.",
+            "d": "They have no impact on the quality of the solution."
         },
         "correct_answer": "b",
-        "timestamp": "00:01:58,640",
-        "seconds": 118,
-        "youtube_url": "https://youtu.be/u6-git6j1v8?t=118s",
-        "explanation": "Explanation: The presenter clearly states, \"in this paper we we focus on the this partially observable marker for games.\""
+        "timestamp": "00:04:54,310",
+        "seconds": 294,
+        "youtube_url": "https://youtu.be/5F9YzkpnaRw?t=294s",
+        "explanation": "Explanation: The transcript explicitly states that heuristic functions give a guarantee \"to find the good solution,\" but they \"does not give the guarantee to find the optimal solution.\""
+    },
+    {
+        "question": "What is the primary definition of search in Artificial Intelligence, as stated in the video?",
+        "options": {
+            "a": "A method to analyze data patterns.",
+            "b": "A systematic approach to find a path from a root state to the goal state.",
+            "c": "A technique to categorize intelligent processes.",
+            "d": "An algorithm to identify optimal solutions without considering cost."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:00:21,539",
+        "seconds": 21,
+        "youtube_url": "https://youtu.be/CnqMV_wXcBg?t=21s",
+        "explanation": "Explaination: The video states that \"search is a systematic approach to find a path from a root state to the goal state.\""
+    },
+    {
+        "question": "What are the two main requirements that a search algorithm should satisfy, according to the video?",
+        "options": {
+            "a": "Efficiency and completeness.",
+            "b": "Optimality and admissibility.",
+            "c": "Motion and systematic approach.",
+            "d": "Heuristic and informed decision-making."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:00:59,640",
+        "seconds": 59,
+        "youtube_url": "https://youtu.be/CnqMV_wXcBg?t=59s",
+        "explanation": "Explaination: The speaker explicitly mentions two requirements: \"it should cause a motion\" and \"the algorithm should be a systematic\" approach."
+    },
+    {
+        "question": "In the context of the Travelling Salesman Problem (TSP) discussed, what is a guaranteed outcome of using an uninformed searching method, despite its drawbacks?",
+        "options": {
+            "a": "It will provide a quick solution.",
+            "b": "It will find a solution in polynomial time.",
+            "c": "It will always yield an optimal solution.",
+            "d": "It will compromise on optimality to save time."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:02:53,804",
+        "seconds": 173,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=173s",
+        "explanation": "Explanation: The transcript states regarding uninformed search, \"It is guaranteed that you will get an optimal solution\" and later, \"But this will always give you an optimal solution that is guaranteed.\""
+    },
+    {
+        "question": "What is the primary reason for employing heuristic methods in informed searching?",
+        "options": {
+            "a": "To guarantee an optimal solution regardless of the problem size.",
+            "b": "To increase the time complexity and explore more states.",
+            "c": "To manage and reduce the exponentially growing state space and time complexity of NP problems.",
+            "d": "To eliminate the need for any domain knowledge or assumptions."
+        },
+        "correct_answer": "c",
+        "timestamp": "00:03:39,378",
+        "seconds": 220,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=220s",
+        "explanation": "Explanation: The speaker clarifies that heuristics are used \"Whenever our state space grows in exponential power... Then over there time complexity is so much... which we generally call as NP problem... And to solve non polynomial problem... we have to use heuristic method somewhere.\" This is done to achieve a solution in polynomial time."
+    },
+    {
+        "question": "Which of the following statements accurately describes the characteristics of informed searching?",
+        "options": {
+            "a": "It is time-consuming and always guarantees an optimal solution.",
+            "b": "It is a quick solution that might compromise with optimality.",
+            "c": "It always requires exploring (n-1)! possibilities for n cities in TSP.",
+            "d": "It has higher time and space complexity compared to uninformed searching."
+        },
+        "correct_answer": "b",
+        "timestamp": "00:05:15,922",
+        "seconds": 315,
+        "youtube_url": "https://youtu.be/gZpUcsB9TFc?t=315s",
+        "explanation": "Explanation: The transcript mentions that informed search is a \"quick solution\" and that \"in this you will have to compromise with optimality.\" It can give a good solution but not necessarily an optimal one."
     }
 ]

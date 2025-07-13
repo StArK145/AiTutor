@@ -72,8 +72,8 @@ ROOT_URLCONF = 'decentral_tutor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'frontend','build')],  # Point to React build
-        'APP_DIRS': True,
+        'DIRS': [], # Can be empty if Django only serves APIs or uses templates for admin/auth
+        'APP_DIRS': True, # Keep this if apps have their own templates (e.g. admin)
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
